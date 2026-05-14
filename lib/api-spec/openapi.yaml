@@ -3,20 +3,30 @@ info:
   # Do not change the title, if the title changes, the import paths will be broken
   title: Api
   version: 0.1.0
-  description: API specification
+  description: NQL DZ Transport Platform API
 servers:
   - url: /api
     description: Base API path
 tags:
   - name: health
     description: Health operations
+  - name: auth
+    description: Authentication
+  - name: admin
+    description: Admin operations
+  - name: driver
+    description: Driver operations
+  - name: customer
+    description: Customer operations
+  - name: distributor
+    description: Distributor operations
+
 paths:
   /healthz:
     get:
       operationId: healthCheck
       tags: [health]
       summary: Health check
-      description: Returns server health status
       responses:
         "200":
           description: Healthy
@@ -24,7 +34,669 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/HealthStatus"
+
+  /auth/login:
+    post:
+      operationId: login
+      tags: [auth]
+      summary: Login
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/LoginRequest"
+      responses:
+        "200":
+          description: Login successful
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AuthResponse"
+        "401":
+          description: Invalid credentials
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+  /auth/register:
+    post:
+      operationId: register
+      tags: [auth]
+      summary: Register customer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/RegisterRequest"
+      responses:
+        "201":
+          description: Registered successfully
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AuthResponse"
+        "400":
+          description: Validation error
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+  /auth/me:
+    get:
+      operationId: getMe
+      tags: [auth]
+      summary: Get current user
+      security:
+        - bearerAuth: []
+      responses:
+        "200":
+          description: Current user info
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/User"
+
+  /auth/change-password:
+    post:
+      operationId: changePassword
+      tags: [auth]
+      summary: Change password (customers only)
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ChangePasswordRequest"
+      responses:
+        "200":
+          description: Password changed
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SuccessResponse"
+
+  # ADMIN
+  /admin/stats:
+    get:
+      operationId: getAdminStats
+      tags: [admin]
+      summary: Get platform statistics
+      security:
+        - bearerAuth: []
+      responses:
+        "200":
+          description: Platform stats
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AdminStats"
+
+  /admin/users:
+    get:
+      operationId: getAdminUsers
+      tags: [admin]
+      summary: Get all users
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: role
+          in: query
+          schema:
+            type: string
+            enum: [driver, customer, distributor]
+        - name: page
+          in: query
+          schema:
+            type: integer
+            default: 1
+      responses:
+        "200":
+          description: Users list
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/UsersListResponse"
+    post:
+      operationId: createUser
+      tags: [admin]
+      summary: Create driver or distributor account
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateUserRequest"
+      responses:
+        "201":
+          description: User created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/User"
+
+  /admin/users/{id}:
+    get:
+      operationId: getAdminUser
+      tags: [admin]
+      summary: Get user by ID
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: User
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/User"
+    put:
+      operationId: updateUser
+      tags: [admin]
+      summary: Update user
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UpdateUserRequest"
+      responses:
+        "200":
+          description: Updated user
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/User"
+
+  /admin/users/{id}/reset-password:
+    post:
+      operationId: resetUserPassword
+      tags: [admin]
+      summary: Reset user password
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ResetPasswordRequest"
+      responses:
+        "200":
+          description: Password reset
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SuccessResponse"
+
+  /admin/cards:
+    get:
+      operationId: getAdminCards
+      tags: [admin]
+      summary: Get all cards
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: status
+          in: query
+          schema:
+            type: string
+            enum: [pending, active, rejected]
+      responses:
+        "200":
+          description: Cards list
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CardsListResponse"
+
+  /admin/cards/{id}/approve:
+    post:
+      operationId: approveCard
+      tags: [admin]
+      summary: Approve a pending card
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Card approved
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Card"
+
+  /admin/cards/{id}/reject:
+    post:
+      operationId: rejectCard
+      tags: [admin]
+      summary: Reject a pending card
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Card rejected
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Card"
+
+  /admin/transactions:
+    get:
+      operationId: getAdminTransactions
+      tags: [admin]
+      summary: Get all transactions
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: page
+          in: query
+          schema:
+            type: integer
+            default: 1
+        - name: type
+          in: query
+          schema:
+            type: string
+            enum: [ride, topup]
+      responses:
+        "200":
+          description: Transactions list
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/TransactionsListResponse"
+
+  /admin/withdrawal-requests:
+    get:
+      operationId: getWithdrawalRequests
+      tags: [admin]
+      summary: Get withdrawal requests
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: status
+          in: query
+          schema:
+            type: string
+            enum: [pending, approved, rejected]
+      responses:
+        "200":
+          description: Withdrawal requests list
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/WithdrawalRequestsListResponse"
+
+  /admin/withdrawal-requests/{id}/approve:
+    post:
+      operationId: approveWithdrawal
+      tags: [admin]
+      summary: Approve withdrawal request
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Approved
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/WithdrawalRequest"
+
+  /admin/withdrawal-requests/{id}/reject:
+    post:
+      operationId: rejectWithdrawal
+      tags: [admin]
+      summary: Reject withdrawal request
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Rejected
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/WithdrawalRequest"
+
+  /admin/distributors/{id}/topup:
+    post:
+      operationId: topupDistributor
+      tags: [admin]
+      summary: Add balance to distributor
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/TopupDistributorRequest"
+      responses:
+        "200":
+          description: Topup successful
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SuccessResponse"
+
+  # DRIVER
+  /driver/dashboard:
+    get:
+      operationId: getDriverDashboard
+      tags: [driver]
+      summary: Get driver dashboard data
+      security:
+        - bearerAuth: []
+      responses:
+        "200":
+          description: Driver dashboard
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/DriverDashboard"
+
+  /driver/scan:
+    post:
+      operationId: driverScanCard
+      tags: [driver]
+      summary: Scan customer QR code and deduct fare
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ScanRequest"
+      responses:
+        "200":
+          description: Scan successful
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ScanResult"
+        "400":
+          description: Insufficient balance or invalid card
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+  /driver/trips:
+    get:
+      operationId: getDriverTrips
+      tags: [driver]
+      summary: Get driver trips list
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: date
+          in: query
+          schema:
+            type: string
+            format: date
+      responses:
+        "200":
+          description: Trips list
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/DriverTripsResponse"
+
+  /driver/report/daily:
+    get:
+      operationId: getDriverDailyReport
+      tags: [driver]
+      summary: Get driver daily report data
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: date
+          in: query
+          schema:
+            type: string
+            format: date
+      responses:
+        "200":
+          description: Daily report
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/DriverDailyReport"
+
+  /driver/withdraw:
+    post:
+      operationId: requestWithdrawal
+      tags: [driver]
+      summary: Request withdrawal
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/WithdrawalRequestCreate"
+      responses:
+        "201":
+          description: Request submitted
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/WithdrawalRequest"
+        "400":
+          description: Insufficient balance
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+  /driver/withdrawals:
+    get:
+      operationId: getDriverWithdrawals
+      tags: [driver]
+      summary: Get driver withdrawal history
+      security:
+        - bearerAuth: []
+      responses:
+        "200":
+          description: Withdrawal history
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/WithdrawalRequestsListResponse"
+
+  # CUSTOMER
+  /customer/cards:
+    get:
+      operationId: getCustomerCards
+      tags: [customer]
+      summary: Get customer cards
+      security:
+        - bearerAuth: []
+      responses:
+        "200":
+          description: Cards list
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CardsListResponse"
+    post:
+      operationId: createCard
+      tags: [customer]
+      summary: Create a new card
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateCardRequest"
+      responses:
+        "201":
+          description: Card created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Card"
+
+  /customer/transactions:
+    get:
+      operationId: getCustomerTransactions
+      tags: [customer]
+      summary: Get customer transaction history
+      security:
+        - bearerAuth: []
+      responses:
+        "200":
+          description: Transactions
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/TransactionsListResponse"
+
+  /customer/profile:
+    put:
+      operationId: updateCustomerProfile
+      tags: [customer]
+      summary: Update customer profile image
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UpdateProfileRequest"
+      responses:
+        "200":
+          description: Profile updated
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/User"
+
+  # DISTRIBUTOR
+  /distributor/dashboard:
+    get:
+      operationId: getDistributorDashboard
+      tags: [distributor]
+      summary: Get distributor dashboard
+      security:
+        - bearerAuth: []
+      responses:
+        "200":
+          description: Distributor dashboard
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/DistributorDashboard"
+
+  /distributor/scan:
+    post:
+      operationId: distributorScanCard
+      tags: [distributor]
+      summary: Scan customer QR code and add balance
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/DistributorScanRequest"
+      responses:
+        "200":
+          description: Topup successful
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ScanResult"
+        "400":
+          description: Insufficient distributor balance or invalid card
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+  /distributor/transactions:
+    get:
+      operationId: getDistributorTransactions
+      tags: [distributor]
+      summary: Get distributor transaction history
+      security:
+        - bearerAuth: []
+      responses:
+        "200":
+          description: Transactions
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/TransactionsListResponse"
+
 components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+
   schemas:
     HealthStatus:
       type: object
@@ -34,3 +706,567 @@ components:
       required:
         - status
 
+    ErrorResponse:
+      type: object
+      properties:
+        error:
+          type: string
+        message:
+          type: string
+      required:
+        - error
+
+    SuccessResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+        message:
+          type: string
+      required:
+        - success
+
+    LoginRequest:
+      type: object
+      properties:
+        email:
+          type: string
+          format: email
+        password:
+          type: string
+      required:
+        - email
+        - password
+
+    RegisterRequest:
+      type: object
+      properties:
+        name:
+          type: string
+        lastName:
+          type: string
+        email:
+          type: string
+          format: email
+        phone:
+          type: string
+        password:
+          type: string
+      required:
+        - name
+        - lastName
+        - email
+        - phone
+        - password
+
+    ChangePasswordRequest:
+      type: object
+      properties:
+        currentPassword:
+          type: string
+        newPassword:
+          type: string
+      required:
+        - currentPassword
+        - newPassword
+
+    ResetPasswordRequest:
+      type: object
+      properties:
+        newPassword:
+          type: string
+      required:
+        - newPassword
+
+    AuthResponse:
+      type: object
+      properties:
+        token:
+          type: string
+        user:
+          $ref: "#/components/schemas/User"
+      required:
+        - token
+        - user
+
+    User:
+      type: object
+      properties:
+        id:
+          type: integer
+        name:
+          type: string
+        lastName:
+          type: string
+        email:
+          type: string
+        phone:
+          type: string
+        role:
+          type: string
+          enum: [admin, driver, customer, distributor]
+        profileImage:
+          type: string
+          nullable: true
+        licenseNumber:
+          type: string
+          nullable: true
+        balance:
+          type: number
+          nullable: true
+        status:
+          type: string
+          enum: [active, inactive]
+        createdAt:
+          type: string
+          format: date-time
+      required:
+        - id
+        - name
+        - lastName
+        - email
+        - phone
+        - role
+        - status
+        - createdAt
+
+    UsersListResponse:
+      type: object
+      properties:
+        users:
+          type: array
+          items:
+            $ref: "#/components/schemas/User"
+        total:
+          type: integer
+      required:
+        - users
+        - total
+
+    CreateUserRequest:
+      type: object
+      properties:
+        name:
+          type: string
+        lastName:
+          type: string
+        email:
+          type: string
+          format: email
+        phone:
+          type: string
+        password:
+          type: string
+        role:
+          type: string
+          enum: [driver, distributor]
+        licenseNumber:
+          type: string
+        profileImage:
+          type: string
+          nullable: true
+      required:
+        - name
+        - lastName
+        - email
+        - phone
+        - password
+        - role
+
+    UpdateUserRequest:
+      type: object
+      properties:
+        name:
+          type: string
+        lastName:
+          type: string
+        email:
+          type: string
+        phone:
+          type: string
+        status:
+          type: string
+          enum: [active, inactive]
+        licenseNumber:
+          type: string
+
+    UpdateProfileRequest:
+      type: object
+      properties:
+        profileImage:
+          type: string
+      required:
+        - profileImage
+
+    Card:
+      type: object
+      properties:
+        id:
+          type: integer
+        userId:
+          type: integer
+        type:
+          type: string
+          enum: [standard, student, employee, special_needs]
+        cardNumber:
+          type: string
+        balance:
+          type: number
+        status:
+          type: string
+          enum: [pending, active, rejected]
+        studentId:
+          type: string
+          nullable: true
+        documentUrl:
+          type: string
+          nullable: true
+        createdAt:
+          type: string
+          format: date-time
+      required:
+        - id
+        - userId
+        - type
+        - cardNumber
+        - balance
+        - status
+        - createdAt
+
+    CardsListResponse:
+      type: object
+      properties:
+        cards:
+          type: array
+          items:
+            $ref: "#/components/schemas/Card"
+        total:
+          type: integer
+      required:
+        - cards
+        - total
+
+    CreateCardRequest:
+      type: object
+      properties:
+        type:
+          type: string
+          enum: [standard, student, employee, special_needs]
+        studentId:
+          type: string
+          nullable: true
+        documentUrl:
+          type: string
+          nullable: true
+        holderName:
+          type: string
+          nullable: true
+        holderLastName:
+          type: string
+          nullable: true
+        nationalId:
+          type: string
+          nullable: true
+        schoolCertUrl:
+          type: string
+          nullable: true
+        workCardUrl:
+          type: string
+          nullable: true
+        disabilityCertUrl:
+          type: string
+          nullable: true
+      required:
+        - type
+
+    Transaction:
+      type: object
+      properties:
+        id:
+          type: integer
+        cardId:
+          type: integer
+        driverId:
+          type: integer
+          nullable: true
+        distributorId:
+          type: integer
+          nullable: true
+        amount:
+          type: number
+        platformFee:
+          type: number
+        driverEarning:
+          type: number
+        type:
+          type: string
+          enum: [ride, topup]
+        cardType:
+          type: string
+          nullable: true
+        createdAt:
+          type: string
+          format: date-time
+      required:
+        - id
+        - cardId
+        - amount
+        - platformFee
+        - driverEarning
+        - type
+        - createdAt
+
+    TransactionsListResponse:
+      type: object
+      properties:
+        transactions:
+          type: array
+          items:
+            $ref: "#/components/schemas/Transaction"
+        total:
+          type: integer
+      required:
+        - transactions
+        - total
+
+    ScanRequest:
+      type: object
+      properties:
+        cardNumber:
+          type: string
+      required:
+        - cardNumber
+
+    DistributorScanRequest:
+      type: object
+      properties:
+        cardNumber:
+          type: string
+        amount:
+          type: number
+      required:
+        - cardNumber
+        - amount
+
+    ScanResult:
+      type: object
+      properties:
+        success:
+          type: boolean
+        cardType:
+          type: string
+        fareAmount:
+          type: number
+        platformFee:
+          type: number
+        driverEarning:
+          type: number
+        cardBalance:
+          type: number
+        message:
+          type: string
+      required:
+        - success
+        - cardType
+        - fareAmount
+        - platformFee
+        - driverEarning
+        - cardBalance
+        - message
+
+    DriverDashboard:
+      type: object
+      properties:
+        balance:
+          type: number
+        todayPassengers:
+          type: integer
+        todayEarnings:
+          type: number
+        platformFeeToday:
+          type: number
+        totalTrips:
+          type: integer
+        recentTrips:
+          type: array
+          items:
+            $ref: "#/components/schemas/Transaction"
+      required:
+        - balance
+        - todayPassengers
+        - todayEarnings
+        - platformFeeToday
+        - totalTrips
+        - recentTrips
+
+    DriverTripsResponse:
+      type: object
+      properties:
+        trips:
+          type: array
+          items:
+            $ref: "#/components/schemas/Transaction"
+        total:
+          type: integer
+        totalEarnings:
+          type: number
+      required:
+        - trips
+        - total
+        - totalEarnings
+
+    DriverDailyReport:
+      type: object
+      properties:
+        date:
+          type: string
+        totalTrips:
+          type: integer
+        totalEarnings:
+          type: number
+        platformFee:
+          type: number
+        passengers:
+          type: integer
+        trips:
+          type: array
+          items:
+            $ref: "#/components/schemas/Transaction"
+      required:
+        - date
+        - totalTrips
+        - totalEarnings
+        - platformFee
+        - passengers
+        - trips
+
+    WithdrawalRequest:
+      type: object
+      properties:
+        id:
+          type: integer
+        driverId:
+          type: integer
+        amount:
+          type: number
+        method:
+          type: string
+          enum: [cash, ccp]
+        phone:
+          type: string
+          nullable: true
+        ccpAccount:
+          type: string
+          nullable: true
+        status:
+          type: string
+          enum: [pending, approved, rejected]
+        createdAt:
+          type: string
+          format: date-time
+      required:
+        - id
+        - driverId
+        - amount
+        - method
+        - status
+        - createdAt
+
+    WithdrawalRequestsListResponse:
+      type: object
+      properties:
+        requests:
+          type: array
+          items:
+            $ref: "#/components/schemas/WithdrawalRequest"
+        total:
+          type: integer
+      required:
+        - requests
+        - total
+
+    WithdrawalRequestCreate:
+      type: object
+      properties:
+        amount:
+          type: number
+        method:
+          type: string
+          enum: [cash, ccp]
+        phone:
+          type: string
+          nullable: true
+        ccpAccount:
+          type: string
+          nullable: true
+        holderName:
+          type: string
+        holderLastName:
+          type: string
+      required:
+        - amount
+        - method
+        - holderName
+        - holderLastName
+
+    AdminStats:
+      type: object
+      properties:
+        totalUsers:
+          type: integer
+        totalDrivers:
+          type: integer
+        totalCustomers:
+          type: integer
+        totalDistributors:
+          type: integer
+        totalTransactions:
+          type: integer
+        totalPlatformEarnings:
+          type: number
+        pendingCards:
+          type: integer
+        pendingWithdrawals:
+          type: integer
+        todayTransactions:
+          type: integer
+        todayEarnings:
+          type: number
+      required:
+        - totalUsers
+        - totalDrivers
+        - totalCustomers
+        - totalDistributors
+        - totalTransactions
+        - totalPlatformEarnings
+        - pendingCards
+        - pendingWithdrawals
+        - todayTransactions
+        - todayEarnings
+
+    TopupDistributorRequest:
+      type: object
+      properties:
+        amount:
+          type: number
+      required:
+        - amount
+
+    DistributorDashboard:
+      type: object
+      properties:
+        balance:
+          type: number
+        todayTopups:
+          type: integer
+        totalTopups:
+          type: integer
+        recentTransactions:
+          type: array
+          items:
+            $ref: "#/components/schemas/Transaction"
+      required:
+        - balance
+        - todayTopups
+        - totalTopups
+        - recentTransactions
