@@ -1,7 +1,7 @@
 import { Router } from "express";
 import { db } from "@workspace/db";
 import { usersTable, cardsTable, transactionsTable } from "@workspace/db";
-import { eq, desc } from "drizzle-orm";
+import { eq, desc, sql } from "drizzle-orm";
 import { requireAuth, requireRole, AuthRequest } from "../middlewares/auth";
 
 const router = Router();
@@ -79,6 +79,48 @@ router.get("/transactions", async (req: AuthRequest, res) => {
     res.json({
       transactions: txs.map(t => ({ ...t, amount: Number(t.amount), platformFee: Number(t.platformFee), driverEarning: Number(t.driverEarning) })),
       total: txs.length,
+    });
+  } catch (err) {
+    req.log.error(err);
+    res.status(500).json({ error: "Server error" });
+  }
+});
+
+router.post("/topup", async (req: AuthRequest, res) => {
+  try {
+    const { amount } = req.body as { amount: number };
+    if (!amount || amount <= 0) {
+      res.status(400).json({ error: "Invalid amount" });
+      return;
+    }
+    const VALID_AMOUNTS = [100, 200, 500, 1000, 2000, 5000];
+    if (!VALID_AMOUNTS.includes(amount)) {
+      res.status(400).json({ error: "Amount must be one of: 100, 200, 500, 1000, 2000, 5000" });
+      return;
+    }
+    const cards = await db.select().from(cardsTable).where(eq(cardsTable.userId, req.userId!));
+    const activeCard = cards.find(c => c.status === "active");
+    if (!activeCard) {
+      res.status(400).json({ error: "No active card found" });
+      return;
+    }
+    await db.execute(sql`UPDATE cards SET balance = balance + ${amount} WHERE id = ${activeCard.id}`);
+    await db.insert(transactionsTable).values({
+      cardId: activeCard.id,
+      distributorId: null,
+      amount: String(amount),
+      platformFee: "0",
+      driverEarning: "0",
+      type: "topup_electronic",
+      cardType: activeCard.type,
+    });
+    const [updatedCard] = await db.select().from(cardsTable).where(eq(cardsTable.id, activeCard.id)).limit(1);
+    res.json({
+      success: true,
+      amountAdded: amount,
+      cardBalance: Number(updatedCard.balance),
+      cardNumber: updatedCard.cardNumber,
+      message: `${amount} DZD added electronically`,
     });
   } catch (err) {
     req.log.error(err);

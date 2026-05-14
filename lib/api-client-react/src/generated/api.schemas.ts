@@ -270,6 +270,8 @@ export interface WithdrawalRequest {
   method: WithdrawalRequestMethod;
   phone?: string | null;
   ccpAccount?: string | null;
+  holderName?: string | null;
+  holderLastName?: string | null;
   status: WithdrawalRequestStatus;
   createdAt: string;
 }
@@ -307,6 +309,18 @@ export interface AdminStats {
   pendingWithdrawals: number;
   todayTransactions: number;
   todayEarnings: number;
+}
+
+export interface CustomerTopupRequest {
+  amount: number;
+}
+
+export interface CustomerTopupResponse {
+  success: boolean;
+  amountAdded: number;
+  cardBalance: number;
+  cardNumber: string;
+  message: string;
 }
 
 export interface TopupDistributorRequest {

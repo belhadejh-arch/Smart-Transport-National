@@ -24,6 +24,8 @@ import type {
   ChangePasswordRequest,
   CreateCardRequest,
   CreateUserRequest,
+  CustomerTopupRequest,
+  CustomerTopupResponse,
   DistributorDashboard,
   DistributorScanRequest,
   DriverDailyReport,
@@ -2459,6 +2461,92 @@ export function useGetCustomerTransactions<
 
   return { ...query, queryKey: queryOptions.queryKey };
 }
+
+/**
+ * @summary Electronic top-up for customer card
+ */
+export const getCustomerTopupUrl = () => {
+  return `/api/customer/topup`;
+};
+
+export const customerTopup = async (
+  customerTopupRequest: CustomerTopupRequest,
+  options?: RequestInit,
+): Promise<CustomerTopupResponse> => {
+  return customFetch<CustomerTopupResponse>(getCustomerTopupUrl(), {
+    ...options,
+    method: "POST",
+    headers: { "Content-Type": "application/json", ...options?.headers },
+    body: JSON.stringify(customerTopupRequest),
+  });
+};
+
+export const getCustomerTopupMutationOptions = <
+  TError = ErrorType<ErrorResponse>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof customerTopup>>,
+    TError,
+    { data: BodyType<CustomerTopupRequest> },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationOptions<
+  Awaited<ReturnType<typeof customerTopup>>,
+  TError,
+  { data: BodyType<CustomerTopupRequest> },
+  TContext
+> => {
+  const mutationKey = ["customerTopup"];
+  const { mutation: mutationOptions, request: requestOptions } = options
+    ? options.mutation &&
+      "mutationKey" in options.mutation &&
+      options.mutation.mutationKey
+      ? options
+      : { ...options, mutation: { ...options.mutation, mutationKey } }
+    : { mutation: { mutationKey }, request: undefined };
+
+  const mutationFn: MutationFunction<
+    Awaited<ReturnType<typeof customerTopup>>,
+    { data: BodyType<CustomerTopupRequest> }
+  > = (props) => {
+    const { data } = props ?? {};
+
+    return customerTopup(data, requestOptions);
+  };
+
+  return { mutationFn, ...mutationOptions };
+};
+
+export type CustomerTopupMutationResult = NonNullable<
+  Awaited<ReturnType<typeof customerTopup>>
+>;
+export type CustomerTopupMutationBody = BodyType<CustomerTopupRequest>;
+export type CustomerTopupMutationError = ErrorType<ErrorResponse>;
+
+/**
+ * @summary Electronic top-up for customer card
+ */
+export const useCustomerTopup = <
+  TError = ErrorType<ErrorResponse>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof customerTopup>>,
+    TError,
+    { data: BodyType<CustomerTopupRequest> },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationResult<
+  Awaited<ReturnType<typeof customerTopup>>,
+  TError,
+  { data: BodyType<CustomerTopupRequest> },
+  TContext
+> => {
+  return useMutation(getCustomerTopupMutationOptions(options));
+};
 
 /**
  * @summary Update customer profile image

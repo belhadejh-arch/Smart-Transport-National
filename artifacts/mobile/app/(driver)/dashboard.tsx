@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { View, Text, ScrollView, StyleSheet, TouchableOpacity, Alert, ActivityIndicator } from "react-native";
+import { View, Text, ScrollView, StyleSheet, TouchableOpacity, Alert, ActivityIndicator, RefreshControl } from "react-native";
 import { router } from "expo-router";
 import { useGetDriverDashboard } from "@workspace/api-client-react";
 import { useAuth } from "@/context/AuthContext";
@@ -47,7 +47,7 @@ export default function DriverDashboard() {
         }
       />
 
-      <ScrollView style={styles.scroll} contentContainerStyle={styles.content} refreshing={isLoading} onRefresh={refetch}>
+      <ScrollView style={styles.scroll} contentContainerStyle={styles.content} refreshControl={<RefreshControl refreshing={isLoading} onRefresh={refetch} tintColor={colors.light.primary} />}>
         {/* Balance hero */}
         <View style={styles.balanceCard}>
           <Text style={styles.balanceLabel}>{t.common.balance}</Text>

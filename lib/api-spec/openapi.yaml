@@ -611,6 +611,33 @@ paths:
               schema:
                 $ref: "#/components/schemas/TransactionsListResponse"
 
+  /customer/topup:
+    post:
+      operationId: customerTopup
+      tags: [customer]
+      summary: Electronic top-up for customer card
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CustomerTopupRequest"
+      responses:
+        "200":
+          description: Topup successful
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CustomerTopupResponse"
+        "400":
+          description: No active card or invalid amount
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
   /customer/profile:
     put:
       operationId: updateCustomerProfile
@@ -1158,6 +1185,12 @@ components:
         ccpAccount:
           type: string
           nullable: true
+        holderName:
+          type: string
+          nullable: true
+        holderLastName:
+          type: string
+          nullable: true
         status:
           type: string
           enum: [pending, approved, rejected]
@@ -1243,6 +1276,34 @@ components:
         - pendingWithdrawals
         - todayTransactions
         - todayEarnings
+
+    CustomerTopupRequest:
+      type: object
+      properties:
+        amount:
+          type: number
+      required:
+        - amount
+
+    CustomerTopupResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+        amountAdded:
+          type: number
+        cardBalance:
+          type: number
+        cardNumber:
+          type: string
+        message:
+          type: string
+      required:
+        - success
+        - amountAdded
+        - cardBalance
+        - cardNumber
+        - message
 
     TopupDistributorRequest:
       type: object

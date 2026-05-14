@@ -312,6 +312,8 @@ export const GetWithdrawalRequestsResponse = zod.object({
       method: zod.enum(["cash", "ccp"]),
       phone: zod.string().nullish(),
       ccpAccount: zod.string().nullish(),
+      holderName: zod.string().nullish(),
+      holderLastName: zod.string().nullish(),
       status: zod.enum(["pending", "approved", "rejected"]),
       createdAt: zod.coerce.date(),
     }),
@@ -333,6 +335,8 @@ export const ApproveWithdrawalResponse = zod.object({
   method: zod.enum(["cash", "ccp"]),
   phone: zod.string().nullish(),
   ccpAccount: zod.string().nullish(),
+  holderName: zod.string().nullish(),
+  holderLastName: zod.string().nullish(),
   status: zod.enum(["pending", "approved", "rejected"]),
   createdAt: zod.coerce.date(),
 });
@@ -351,6 +355,8 @@ export const RejectWithdrawalResponse = zod.object({
   method: zod.enum(["cash", "ccp"]),
   phone: zod.string().nullish(),
   ccpAccount: zod.string().nullish(),
+  holderName: zod.string().nullish(),
+  holderLastName: zod.string().nullish(),
   status: zod.enum(["pending", "approved", "rejected"]),
   createdAt: zod.coerce.date(),
 });
@@ -492,6 +498,8 @@ export const GetDriverWithdrawalsResponse = zod.object({
       method: zod.enum(["cash", "ccp"]),
       phone: zod.string().nullish(),
       ccpAccount: zod.string().nullish(),
+      holderName: zod.string().nullish(),
+      holderLastName: zod.string().nullish(),
       status: zod.enum(["pending", "approved", "rejected"]),
       createdAt: zod.coerce.date(),
     }),
@@ -553,6 +561,21 @@ export const GetCustomerTransactionsResponse = zod.object({
     }),
   ),
   total: zod.number(),
+});
+
+/**
+ * @summary Electronic top-up for customer card
+ */
+export const CustomerTopupBody = zod.object({
+  amount: zod.number(),
+});
+
+export const CustomerTopupResponse = zod.object({
+  success: zod.boolean(),
+  amountAdded: zod.number(),
+  cardBalance: zod.number(),
+  cardNumber: zod.string(),
+  message: zod.string(),
 });
 
 /**

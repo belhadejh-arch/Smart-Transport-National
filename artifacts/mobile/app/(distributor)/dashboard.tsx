@@ -1,5 +1,5 @@
 import React from "react";
-import { View, Text, StyleSheet, TouchableOpacity, Alert, ActivityIndicator, ScrollView } from "react-native";
+import { View, Text, StyleSheet, TouchableOpacity, Alert, ActivityIndicator, ScrollView, RefreshControl } from "react-native";
 import { router } from "expo-router";
 import { useGetDistributorDashboard } from "@workspace/api-client-react";
 import { useAuth } from "@/context/AuthContext";
@@ -39,7 +39,7 @@ export default function DistributorDashboard() {
           </View>
         }
       />
-      <ScrollView contentContainerStyle={styles.content} refreshing={isLoading} onRefresh={refetch}>
+      <ScrollView contentContainerStyle={styles.content} refreshControl={<RefreshControl refreshing={isLoading} onRefresh={refetch} tintColor={colors.light.primary} />}>
         {/* Balance hero */}
         <View style={styles.balanceCard}>
           <Text style={styles.balanceLabel}>{t.common.balance}</Text>

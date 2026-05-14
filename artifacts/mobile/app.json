@@ -40,6 +40,13 @@
           "microphonePermission": false,
           "recordAudioAndroid": false
         }
+      ],
+      [
+        "expo-image-picker",
+        {
+          "photosPermission": "Allow NQL DZ to access your photos to upload card documents.",
+          "cameraPermission": "Allow NQL DZ to use the camera to take document photos."
+        }
       ]
     ],
     "experiments": {
