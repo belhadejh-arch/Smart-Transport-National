@@ -78,17 +78,7 @@ export default function DriverScan() {
     setScanned(false);
   }
 
-  if (!permission) {
-    return (
-      <View style={{ flex: 1, backgroundColor: C.background }}>
-        <Header title={t.driver.scanTitle} />
-        <ActivityIndicator style={{ flex: 1 }} color={C.primary} />
-        <TabBar tabs={tabs} activeKey="scan" />
-      </View>
-    );
-  }
-
-  if (!permission.granted) {
+  if (!permission?.granted) {
     return (
       <View style={{ flex: 1, backgroundColor: C.background }}>
         <Header title={t.driver.scanTitle} />
@@ -100,12 +90,16 @@ export default function DriverScan() {
           <Text style={{ fontFamily: "Changa_400Regular", fontSize: 14, color: C.mutedForeground, textAlign: "center" }}>
             لمسح رموز QR لبطاقات الركاب
           </Text>
-          <TouchableOpacity
-            style={{ backgroundColor: C.primary, borderRadius: 14, padding: 16, paddingHorizontal: 40 }}
-            onPress={requestPermission}
-          >
-            <Text style={{ fontFamily: "Changa_700Bold", fontSize: 16, color: "#FFF" }}>السماح بالكاميرا</Text>
-          </TouchableOpacity>
+          {!permission ? (
+            <ActivityIndicator color={C.primary} size="large" />
+          ) : (
+            <TouchableOpacity
+              style={{ backgroundColor: C.primary, borderRadius: 14, padding: 16, paddingHorizontal: 40 }}
+              onPress={requestPermission}
+            >
+              <Text style={{ fontFamily: "Changa_700Bold", fontSize: 16, color: "#FFF" }}>السماح بالكاميرا</Text>
+            </TouchableOpacity>
+          )}
           <TouchableOpacity onPress={() => setShowManual(true)}>
             <Text style={{ fontFamily: "Changa_500Medium", fontSize: 14, color: C.mutedForeground, textDecorationLine: "underline" }}>
               أو أدخل رقم البطاقة يدوياً

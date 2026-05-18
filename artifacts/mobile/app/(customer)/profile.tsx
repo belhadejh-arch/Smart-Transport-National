@@ -9,6 +9,7 @@ import { useAuth } from "@/context/AuthContext";
 import { useLanguage } from "@/context/LanguageContext";
 import { useTheme } from "@/context/ThemeContext";
 import { Header } from "@/components/Header";
+import { LanguageSwitcher } from "@/components/LanguageSwitcher";
 import { TabBar } from "@/components/TabBar";
 
 export default function CustomerProfile() {
@@ -128,6 +129,9 @@ export default function CustomerProfile() {
             <Text style={{ fontSize: 22, color: C.mutedForeground }}>›</Text>
           </TouchableOpacity>
         </View>
+
+        {/* Language Switcher */}
+        <LanguageSwitcher />
 
         {/* Support contact */}
         <View style={s.card}>

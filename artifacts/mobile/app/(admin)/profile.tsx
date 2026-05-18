@@ -11,6 +11,7 @@ import { useLanguage } from "@/context/LanguageContext";
 import { useTheme } from "@/context/ThemeContext";
 import { Header } from "@/components/Header";
 import { TabBar } from "@/components/TabBar";
+import { LanguageSwitcher } from "@/components/LanguageSwitcher";
 
 const API_BASE = `https://${process.env.EXPO_PUBLIC_DOMAIN}`;
 
@@ -133,6 +134,9 @@ export default function AdminProfile() {
           <InfoRow label="تاريخ الإنشاء" value={joinedDate} icon="📅" C={C} />
           <InfoRow label="الحالة" value={user?.status === "active" ? "نشط ✓" : "غير نشط"} icon="🔵" C={C} />
         </View>
+
+        {/* Language Switcher */}
+        <LanguageSwitcher />
 
         {/* Dark Mode Toggle */}
         <View style={styles.card}>

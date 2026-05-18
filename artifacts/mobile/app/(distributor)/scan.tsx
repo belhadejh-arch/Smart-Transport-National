@@ -120,10 +120,9 @@ export default function DistributorScan() {
           <Text style={{ fontFamily: "Changa_400Regular", fontSize: 14, color: C.mutedForeground, textAlign: "center" }}>
             لمسح رموز QR لبطاقات المستخدمين
           </Text>
-          {!permission && (
-            <ActivityIndicator color={C.accent} />
-          )}
-          {permission && !permission.granted && (
+          {!permission ? (
+            <ActivityIndicator color={C.accent} size="large" />
+          ) : (
             <TouchableOpacity
               style={{ backgroundColor: C.accent, borderRadius: 14, padding: 16, paddingHorizontal: 40 }}
               onPress={requestPermission}

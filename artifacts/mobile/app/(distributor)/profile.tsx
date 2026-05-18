@@ -6,6 +6,7 @@ import { useLanguage } from "@/context/LanguageContext";
 import { useTheme } from "@/context/ThemeContext";
 import { Header } from "@/components/Header";
 import { TabBar } from "@/components/TabBar";
+import { LanguageSwitcher } from "@/components/LanguageSwitcher";
 
 export default function DistributorProfile() {
   const { t } = useLanguage();
@@ -60,6 +61,9 @@ export default function DistributorProfile() {
             />
           </View>
         </View>
+
+        {/* Language Switcher */}
+        <LanguageSwitcher />
 
         {/* Balance Request shortcut */}
         <TouchableOpacity

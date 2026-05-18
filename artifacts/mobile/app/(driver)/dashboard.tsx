@@ -6,6 +6,7 @@ import { useAuth } from "@/context/AuthContext";
 import { useLanguage } from "@/context/LanguageContext";
 import { useTheme } from "@/context/ThemeContext";
 import { Header } from "@/components/Header";
+import { WelcomeModal } from "@/components/WelcomeModal";
 import { StatCard } from "@/components/StatCard";
 import { TabBar } from "@/components/TabBar";
 
@@ -95,6 +96,7 @@ export default function DriverDashboard() {
       </ScrollView>
 
       <TabBar tabs={tabs} activeKey="dashboard" />
+      {user && <WelcomeModal userId={user.id} userName={user.name} role={user.role} />}
     </View>
   );
 }

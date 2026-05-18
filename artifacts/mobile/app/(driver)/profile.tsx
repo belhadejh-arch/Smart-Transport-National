@@ -6,6 +6,7 @@ import { useLanguage } from "@/context/LanguageContext";
 import { useTheme } from "@/context/ThemeContext";
 import { Header } from "@/components/Header";
 import { TabBar } from "@/components/TabBar";
+import { LanguageSwitcher } from "@/components/LanguageSwitcher";
 
 export default function DriverProfile() {
   const { t } = useLanguage();
@@ -65,6 +66,9 @@ export default function DriverProfile() {
         <View style={s.note}>
           <Text style={s.noteText}>🔒 {t.customer.changePassword} — {t.admin.resetPassword}</Text>
         </View>
+
+        {/* Language Switcher */}
+        <LanguageSwitcher />
 
         {/* Support contact */}
         <View style={s.supportCard}>

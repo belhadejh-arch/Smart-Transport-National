@@ -9,6 +9,7 @@ import { useAuth } from "@/context/AuthContext";
 import { useLanguage } from "@/context/LanguageContext";
 import { useTheme } from "@/context/ThemeContext";
 import { Header } from "@/components/Header";
+import { WelcomeModal } from "@/components/WelcomeModal";
 import { TabBar } from "@/components/TabBar";
 import { generateAndSharePDF } from "@/utils/pdfReport";
 
@@ -178,6 +179,7 @@ export default function DistributorDashboard() {
       </ScrollView>
 
       <TabBar tabs={tabs} activeKey="dashboard" />
+      {user && <WelcomeModal userId={user.id} userName={user.name} role={user.role} />}
     </View>
   );
 }
