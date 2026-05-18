@@ -219,6 +219,9 @@ export interface ScanResult {
   platformFee: number;
   driverEarning: number;
   cardBalance: number;
+  amount?: number;
+  profit?: number;
+  distributorBalance?: number;
   message: string;
 }
 

@@ -1090,6 +1090,12 @@ components:
           type: number
         cardBalance:
           type: number
+        amount:
+          type: number
+        profit:
+          type: number
+        distributorBalance:
+          type: number
         message:
           type: string
       required:

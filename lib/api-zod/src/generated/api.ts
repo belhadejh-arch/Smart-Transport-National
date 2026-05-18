@@ -416,6 +416,9 @@ export const DriverScanCardResponse = zod.object({
   platformFee: zod.number(),
   driverEarning: zod.number(),
   cardBalance: zod.number(),
+  amount: zod.number().optional(),
+  profit: zod.number().optional(),
+  distributorBalance: zod.number().optional(),
   message: zod.string(),
 });
 
@@ -639,6 +642,9 @@ export const DistributorScanCardResponse = zod.object({
   platformFee: zod.number(),
   driverEarning: zod.number(),
   cardBalance: zod.number(),
+  amount: zod.number().optional(),
+  profit: zod.number().optional(),
+  distributorBalance: zod.number().optional(),
   message: zod.string(),
 });
 
