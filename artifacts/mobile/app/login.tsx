@@ -6,6 +6,13 @@ import { useLanguage } from "@/context/LanguageContext";
 import { useAuth } from "@/context/AuthContext";
 import colors from "@/constants/colors";
 
+const DEMO_ACCOUNTS = [
+  { label: "👤 مستخدم", email: "customer@nqldz.com", password: "Customer@1234", color: "#059669" },
+  { label: "🚍 سائق",   email: "driver@nqldz.com",   password: "Driver@1234",   color: "#2C6B7F" },
+  { label: "🏪 موزع",   email: "distributor@nqldz.com", password: "Dist@1234",  color: "#D4A24E" },
+  { label: "🛡️ أدمن",  email: "admin@nqldz.com",    password: "Admin@1234",    color: "#7C3AED" },
+];
+
 export default function LoginScreen() {
   const { t, isRTL } = useLanguage();
   const { login } = useAuth();
@@ -14,6 +21,7 @@ export default function LoginScreen() {
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
   const [showPass, setShowPass] = useState(false);
+  const [showDemo, setShowDemo] = useState(false);
 
   const API_BASE = `https://${process.env.EXPO_PUBLIC_DOMAIN}`;
 
@@ -108,6 +116,36 @@ export default function LoginScreen() {
             </Text>
           </TouchableOpacity>
         </View>
+
+        {/* Demo accounts */}
+        <View style={styles.demoSection}>
+          <TouchableOpacity
+            style={styles.demoToggle}
+            onPress={() => setShowDemo(!showDemo)}
+            activeOpacity={0.8}
+          >
+            <Text style={styles.demoToggleText}>
+              {showDemo ? "▲" : "▼"} الحسابات التجريبية
+            </Text>
+          </TouchableOpacity>
+
+          {showDemo && (
+            <View style={styles.demoGrid}>
+              {DEMO_ACCOUNTS.map(acc => (
+                <TouchableOpacity
+                  key={acc.email}
+                  style={[styles.demoCard, { borderColor: acc.color }]}
+                  onPress={() => { setEmail(acc.email); setPassword(acc.password); setShowDemo(false); }}
+                  activeOpacity={0.8}
+                >
+                  <Text style={styles.demoLabel}>{acc.label}</Text>
+                  <Text style={[styles.demoCred, { color: acc.color }]}>{acc.email}</Text>
+                  <Text style={styles.demoPwd}>{acc.password}</Text>
+                </TouchableOpacity>
+              ))}
+            </View>
+          )}
+        </View>
       </ScrollView>
     </KeyboardAvoidingView>
   );
@@ -154,4 +192,19 @@ const styles = StyleSheet.create({
   registerLink: { marginTop: 16, alignItems: "center" },
   registerLinkText: { fontFamily: "Changa_400Regular", fontSize: 14, color: C.mutedForeground },
   registerLinkBold: { fontFamily: "Changa_600SemiBold", color: C.primary },
+  demoSection: { width: "100%", marginTop: 16 },
+  demoToggle: {
+    alignSelf: "center", paddingVertical: 8, paddingHorizontal: 20,
+    borderRadius: 20, backgroundColor: C.card,
+    borderWidth: 1, borderColor: C.border,
+  },
+  demoToggleText: { fontFamily: "Changa_600SemiBold", fontSize: 13, color: C.mutedForeground },
+  demoGrid: { flexDirection: "row", flexWrap: "wrap", gap: 8, marginTop: 10 },
+  demoCard: {
+    width: "47%", backgroundColor: C.card, borderRadius: 14,
+    padding: 12, borderWidth: 1.5, gap: 3,
+  },
+  demoLabel: { fontFamily: "Changa_700Bold", fontSize: 14, color: C.foreground },
+  demoCred: { fontFamily: "Changa_500Medium", fontSize: 11 },
+  demoPwd: { fontFamily: "Changa_400Regular", fontSize: 10, color: C.mutedForeground },
 });
