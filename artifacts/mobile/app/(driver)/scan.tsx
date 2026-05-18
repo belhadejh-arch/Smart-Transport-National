@@ -3,7 +3,7 @@ import {
   View, Text, TouchableOpacity, Modal, ActivityIndicator,
   TextInput, KeyboardAvoidingView, Platform, Animated,
 } from "react-native";
-import { CameraView } from "expo-camera";
+import { CameraView, useCameraPermissions } from "expo-camera";
 import { router } from "expo-router";
 import * as Haptics from "expo-haptics";
 import { useDriverScanCard } from "@workspace/api-client-react";
@@ -16,6 +16,7 @@ import { Sounds } from "@/utils/sounds";
 export default function DriverScan() {
   const { t } = useLanguage();
   const { C } = useTheme();
+  const [permission, requestPermission] = useCameraPermissions();
   const [scanned, setScanned] = useState(false);
   const [processing, setProcessing] = useState(false);
   const [result, setResult] = useState<any>(null);
@@ -24,6 +25,13 @@ export default function DriverScan() {
   const [manualCard, setManualCard] = useState("");
   const { mutateAsync: scan } = useDriverScanCard();
   const cooldown = useRef(false);
+
+  // Auto-request permission on mount
+  useEffect(() => {
+    if (permission && !permission.granted && permission.canAskAgain) {
+      requestPermission();
+    }
+  }, [permission?.granted, permission?.canAskAgain]);
 
   const tabs = [
     { key: "dashboard", icon: "📊", label: t.driver.dashboard, onPress: () => router.replace("/(driver)/dashboard") },
@@ -75,6 +83,38 @@ export default function DriverScan() {
     setShowResult(false);
     setResult(null);
     setScanned(false);
+  }
+
+  // Permission screen - shown until user grants camera access
+  if (!permission?.granted) {
+    return (
+      <View style={{ flex: 1, backgroundColor: C.background }}>
+        <Header title={t.driver.scanTitle} />
+        <View style={{ flex: 1, alignItems: "center", justifyContent: "center", padding: 32, gap: 20 }}>
+          <Text style={{ fontSize: 72 }}>📷</Text>
+          <Text style={{ fontFamily: "Changa_700Bold", fontSize: 18, color: C.foreground, textAlign: "center" }}>
+            {t.camera.permissionTitle}
+          </Text>
+          <Text style={{ fontFamily: "Changa_400Regular", fontSize: 14, color: C.mutedForeground, textAlign: "center" }}>
+            {t.camera.permissionSubDriver}
+          </Text>
+          <TouchableOpacity
+            style={{ backgroundColor: C.primary, borderRadius: 14, padding: 16, paddingHorizontal: 40 }}
+            onPress={requestPermission}
+          >
+            <Text style={{ fontFamily: "Changa_700Bold", fontSize: 16, color: "#FFF" }}>{t.camera.allow}</Text>
+          </TouchableOpacity>
+          <TouchableOpacity onPress={() => setShowManual(true)}>
+            <Text style={{ fontFamily: "Changa_500Medium", fontSize: 14, color: C.mutedForeground, textDecorationLine: "underline" }}>
+              {t.camera.orManual}
+            </Text>
+          </TouchableOpacity>
+        </View>
+        <TabBar tabs={tabs} activeKey="scan" />
+        <ManualModal visible={showManual} value={manualCard} onChange={setManualCard} onSubmit={() => processCard(manualCard)} onClose={() => setShowManual(false)} processing={processing} C={C} />
+        <ResultModal visible={showResult} result={result} onClose={handleClose} C={C} t={t} />
+      </View>
+    );
   }
 
   return (
