@@ -53,7 +53,7 @@ export default function DriverProfile() {
           ))}
 
           <View style={s.themeRow}>
-            <Text style={s.infoLabel}>{isDark ? "🌙 الوضع الليلي" : "☀️ الوضع النهاري"}</Text>
+            <Text style={s.infoLabel}>{isDark ? `🌙 ${t.profileSection.darkModeLabel}` : `☀️ ${t.profileSection.darkModeLabel}`}</Text>
             <Switch
               value={isDark}
               onValueChange={toggleTheme}
@@ -72,8 +72,8 @@ export default function DriverProfile() {
 
         {/* Support contact */}
         <View style={s.supportCard}>
-          <Text style={s.supportTitle}>📞 مراسلة الدعم</Text>
-          <Text style={s.supportSub}>تواصل مع فريق الدعم الفني للمساعدة</Text>
+          <Text style={s.supportTitle}>{t.support.title}</Text>
+          <Text style={s.supportSub}>{t.support.subtitle}</Text>
           <TouchableOpacity
             style={s.supportBtn}
             onPress={() => Linking.openURL("tel:0774148015")}
@@ -86,7 +86,7 @@ export default function DriverProfile() {
             onPress={() => Linking.openURL("https://wa.me/213774148015")}
             activeOpacity={0.85}
           >
-            <Text style={s.whatsappBtnText}>💬 واتساب</Text>
+            <Text style={s.whatsappBtnText}>💬 {t.support.whatsapp}</Text>
           </TouchableOpacity>
         </View>
 

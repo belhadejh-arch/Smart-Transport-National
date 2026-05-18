@@ -128,11 +128,11 @@ export default function AdminProfile() {
 
         {/* Info Card */}
         <View style={styles.card}>
-          <Text style={styles.cardTitle}>معلومات الحساب</Text>
-          <InfoRow label="البريد الإلكتروني" value={user?.email ?? ""} icon="📧" C={C} />
-          <InfoRow label="رقم الهاتف" value={user?.phone ?? ""} icon="📱" C={C} />
-          <InfoRow label="تاريخ الإنشاء" value={joinedDate} icon="📅" C={C} />
-          <InfoRow label="الحالة" value={user?.status === "active" ? "نشط ✓" : "غير نشط"} icon="🔵" C={C} />
+          <Text style={styles.cardTitle}>{t.profileSection.accountInfo}</Text>
+          <InfoRow label={t.common.email} value={user?.email ?? ""} icon="📧" C={C} />
+          <InfoRow label={t.common.phone} value={user?.phone ?? ""} icon="📱" C={C} />
+          <InfoRow label={t.profileSection.joinDate} value={joinedDate} icon="📅" C={C} />
+          <InfoRow label={t.profileSection.accountStatus} value={user?.status === "active" ? t.profileSection.activeStatus : t.profileSection.inactiveStatus} icon="🔵" C={C} />
         </View>
 
         {/* Language Switcher */}
@@ -144,8 +144,8 @@ export default function AdminProfile() {
             <View style={styles.toggleLeft}>
               <Text style={styles.toggleIcon}>{isDark ? "🌙" : "☀️"}</Text>
               <View>
-                <Text style={styles.toggleLabel}>الوضع الليلي</Text>
-                <Text style={styles.toggleSub}>{isDark ? "الوضع الداكن مفعّل" : "الوضع الفاتح مفعّل"}</Text>
+                <Text style={styles.toggleLabel}>{t.profileSection.darkModeLabel}</Text>
+                <Text style={styles.toggleSub}>{isDark ? t.profileSection.darkModeOn : t.profileSection.darkModeOff}</Text>
               </View>
             </View>
             <Switch

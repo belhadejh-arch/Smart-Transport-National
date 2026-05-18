@@ -66,17 +66,17 @@ export default function CustomerProfile() {
           </View>
           <Text style={s.name}>{user?.name} {user?.lastName}</Text>
           <View style={s.roleBadge}>
-            <Text style={s.roleBadgeText}>👤 مستخدم</Text>
+            <Text style={s.roleBadgeText}>👤 {t.profileSection.userRole}</Text>
           </View>
         </View>
 
         {/* Info */}
         <View style={s.card}>
-          <Text style={s.cardTitle}>معلومات الحساب</Text>
+          <Text style={s.cardTitle}>{t.profileSection.accountInfo}</Text>
           {[
             { icon: "📧", label: t.common.email, value: user?.email ?? "-" },
             { icon: "📱", label: t.common.phone, value: user?.phone ?? "-" },
-            { icon: "📅", label: "تاريخ الإنشاء", value: joinedDate },
+            { icon: "📅", label: t.profileSection.joinDate, value: joinedDate },
           ].map(item => (
             <View key={item.label} style={s.infoRow}>
               <Text style={{ fontSize: 16, width: 24 }}>{item.icon}</Text>
@@ -94,8 +94,8 @@ export default function CustomerProfile() {
             <View style={s.toggleLeft}>
               <Text style={{ fontSize: 24 }}>{isDark ? "🌙" : "☀️"}</Text>
               <View>
-                <Text style={s.toggleLabel}>الوضع الليلي</Text>
-                <Text style={s.toggleSub}>{isDark ? "الوضع الداكن مفعّل" : "الوضع الفاتح مفعّل"}</Text>
+                <Text style={s.toggleLabel}>{t.profileSection.darkModeLabel}</Text>
+                <Text style={s.toggleSub}>{isDark ? t.profileSection.darkModeOn : t.profileSection.darkModeOff}</Text>
               </View>
             </View>
             <Switch
@@ -113,7 +113,7 @@ export default function CustomerProfile() {
             <Text style={{ fontSize: 20, width: 32, textAlign: "center" }}>🔑</Text>
             <View style={{ flex: 1 }}>
               <Text style={s.actionLabel}>{t.customer.changePassword}</Text>
-              <Text style={s.actionSub}>تغيير كلمة المرور الحالية</Text>
+              <Text style={s.actionSub}>{t.profileSection.changePwdHint}</Text>
             </View>
             <Text style={{ fontSize: 22, color: C.mutedForeground }}>›</Text>
           </TouchableOpacity>
@@ -124,7 +124,7 @@ export default function CustomerProfile() {
             <Text style={{ fontSize: 20, width: 32, textAlign: "center" }}>↔</Text>
             <View style={{ flex: 1 }}>
               <Text style={s.actionLabel}>{t.common.switchAccount}</Text>
-              <Text style={s.actionSub}>تسجيل الدخول بحساب آخر</Text>
+              <Text style={s.actionSub}>{t.profileSection.switchHint}</Text>
             </View>
             <Text style={{ fontSize: 22, color: C.mutedForeground }}>›</Text>
           </TouchableOpacity>

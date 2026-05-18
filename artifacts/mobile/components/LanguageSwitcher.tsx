@@ -10,12 +10,12 @@ const LANGS: { code: Lang; label: string; flag: string; native: string }[] = [
 ];
 
 export function LanguageSwitcher() {
-  const { lang, setLang } = useLanguage();
+  const { lang, setLang, t } = useLanguage();
   const { C } = useTheme();
 
   return (
     <View style={[s.card, { backgroundColor: C.card, borderColor: C.border }]}>
-      <Text style={[s.cardTitle, { color: C.foreground }]}>🌐 اللغة / Language</Text>
+      <Text style={[s.cardTitle, { color: C.foreground }]}>{t.profileSection.language}</Text>
       <View style={s.row}>
         {LANGS.map((l) => {
           const active = lang === l.code;

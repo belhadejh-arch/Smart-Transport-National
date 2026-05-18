@@ -52,7 +52,7 @@ export default function DistributorProfile() {
           ))}
 
           <View style={s.themeRow}>
-            <Text style={s.infoLabel}>{isDark ? "🌙 الوضع الليلي" : "☀️ الوضع النهاري"}</Text>
+            <Text style={s.infoLabel}>{isDark ? `🌙 ${t.profileSection.darkModeLabel}` : `☀️ ${t.profileSection.darkModeLabel}`}</Text>
             <Switch
               value={isDark}
               onValueChange={toggleTheme}
@@ -73,21 +73,21 @@ export default function DistributorProfile() {
         >
           <Text style={s.balanceReqIcon}>💳</Text>
           <View style={{ flex: 1 }}>
-            <Text style={s.balanceReqTitle}>طلب رصيد من المنصة</Text>
-            <Text style={s.balanceReqSub}>اطلب رصيداً جديداً عند نفاد رصيدك</Text>
+            <Text style={s.balanceReqTitle}>{t.profileSection.balanceRequest}</Text>
+            <Text style={s.balanceReqSub}>{t.profileSection.balanceRequestSub}</Text>
           </View>
           <Text style={{ fontSize: 20, color: "#FFF" }}>›</Text>
         </TouchableOpacity>
 
         {/* Support contact */}
         <View style={s.supportCard}>
-          <Text style={s.supportTitle}>📞 مراسلة الدعم</Text>
-          <Text style={s.supportSub}>تواصل مع فريق الدعم الفني للمساعدة</Text>
+          <Text style={s.supportTitle}>{t.support.title}</Text>
+          <Text style={s.supportSub}>{t.support.subtitle}</Text>
           <TouchableOpacity style={s.supportBtn} onPress={() => Linking.openURL("tel:0774148015")} activeOpacity={0.85}>
             <Text style={s.supportBtnText}>📲 0774148015</Text>
           </TouchableOpacity>
           <TouchableOpacity style={s.whatsappBtn} onPress={() => Linking.openURL("https://wa.me/213774148015")} activeOpacity={0.85}>
-            <Text style={s.whatsappBtnText}>💬 واتساب</Text>
+            <Text style={s.whatsappBtnText}>💬 {t.support.whatsapp}</Text>
           </TouchableOpacity>
         </View>
 

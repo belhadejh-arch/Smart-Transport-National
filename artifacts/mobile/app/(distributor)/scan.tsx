@@ -41,6 +41,10 @@ export default function DistributorScan() {
   const { mutateAsync: scan } = useDistributorScanCard();
   const cooldown = useRef(false);
 
+  useEffect(() => {
+    requestPermission();
+  }, []);
+
   const tabs = [
     { key: "dashboard", icon: "📊", label: t.distributor.dashboard, onPress: () => router.replace("/(distributor)/dashboard") },
     { key: "scan", icon: "📷", label: t.distributor.scan, onPress: () => {} },
@@ -115,24 +119,24 @@ export default function DistributorScan() {
         <View style={{ flex: 1, alignItems: "center", justifyContent: "center", padding: 32, gap: 20 }}>
           <Text style={{ fontSize: 72 }}>📷</Text>
           <Text style={{ fontFamily: "Changa_700Bold", fontSize: 18, color: C.foreground, textAlign: "center" }}>
-            نحتاج إذن الكاميرا
+            {t.camera.permissionTitle}
           </Text>
           <Text style={{ fontFamily: "Changa_400Regular", fontSize: 14, color: C.mutedForeground, textAlign: "center" }}>
-            لمسح رموز QR لبطاقات المستخدمين
+            {t.camera.permissionSubDist}
           </Text>
-          {!permission ? (
+          {!permission || permission.status === "undetermined" ? (
             <ActivityIndicator color={C.accent} size="large" />
           ) : (
             <TouchableOpacity
               style={{ backgroundColor: C.accent, borderRadius: 14, padding: 16, paddingHorizontal: 40 }}
               onPress={requestPermission}
             >
-              <Text style={{ fontFamily: "Changa_700Bold", fontSize: 16, color: "#FFF" }}>السماح بالكاميرا</Text>
+              <Text style={{ fontFamily: "Changa_700Bold", fontSize: 16, color: "#FFF" }}>{t.camera.allow}</Text>
             </TouchableOpacity>
           )}
           <TouchableOpacity onPress={openManual}>
             <Text style={{ fontFamily: "Changa_500Medium", fontSize: 14, color: C.mutedForeground, textDecorationLine: "underline" }}>
-              أو أدخل رقم البطاقة يدوياً
+              {t.camera.orManual}
             </Text>
           </TouchableOpacity>
         </View>
