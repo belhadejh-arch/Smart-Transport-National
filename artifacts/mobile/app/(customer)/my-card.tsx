@@ -1,6 +1,7 @@
 import React from "react";
 import { View, Text, StyleSheet, TouchableOpacity, ActivityIndicator, ScrollView, Alert } from "react-native";
 import { router } from "expo-router";
+import * as Clipboard from "expo-clipboard";
 import QRCode from "react-native-qrcode-svg";
 import { useGetCustomerCards } from "@workspace/api-client-react";
 import { useLanguage } from "@/context/LanguageContext";
@@ -29,6 +30,12 @@ export default function MyCard() {
     employee: "#059669",
     special_needs: "#D97706",
   };
+
+  async function copyCardNumber() {
+    if (!card?.cardNumber) return;
+    await Clipboard.setStringAsync(card.cardNumber);
+    Alert.alert("✓", "تم نسخ رقم البطاقة");
+  }
 
   return (
     <View style={styles.screen}>
@@ -68,10 +75,20 @@ export default function MyCard() {
                   {t.customer.cardTypes[card.type as keyof typeof t.customer.cardTypes] ?? card.type}
                 </Text>
               </View>
+
+              {/* Card number row with copy button */}
               <View style={styles.infoRow}>
                 <Text style={styles.infoLabel}>{t.customer.cardNumber}</Text>
-                <Text style={[styles.infoValue, { fontFamily: "Changa_400Regular", letterSpacing: 2 }]}>{card.cardNumber}</Text>
+                <View style={styles.cardNumberRow}>
+                  <Text style={[styles.infoValue, { fontFamily: "Changa_400Regular", letterSpacing: 2 }]}>
+                    {card.cardNumber}
+                  </Text>
+                  <TouchableOpacity style={styles.copyBtn} onPress={copyCardNumber} activeOpacity={0.7}>
+                    <Text style={styles.copyBtnText}>📋</Text>
+                  </TouchableOpacity>
+                </View>
               </View>
+
               <View style={styles.infoRow}>
                 <Text style={styles.infoLabel}>{t.common.balance}</Text>
                 <Text style={[styles.infoValue, { color: C.success, fontSize: 18 }]}>
@@ -121,9 +138,15 @@ const styles = StyleSheet.create({
     backgroundColor: C.card, borderRadius: 16, padding: 16, width: "100%",
     borderWidth: 1, borderColor: C.border,
   },
-  infoRow: { flexDirection: "row", justifyContent: "space-between", paddingVertical: 10, borderBottomWidth: 1, borderBottomColor: C.border },
+  infoRow: { flexDirection: "row", justifyContent: "space-between", alignItems: "center", paddingVertical: 10, borderBottomWidth: 1, borderBottomColor: C.border },
   infoLabel: { fontFamily: "Changa_500Medium", fontSize: 14, color: C.mutedForeground },
   infoValue: { fontFamily: "Changa_700Bold", fontSize: 15, color: C.foreground },
+  cardNumberRow: { flexDirection: "row", alignItems: "center", gap: 8 },
+  copyBtn: {
+    backgroundColor: C.muted, borderRadius: 8, padding: 6,
+    borderWidth: 1, borderColor: C.border,
+  },
+  copyBtnText: { fontSize: 16 },
   noCard: { flex: 1, alignItems: "center", justifyContent: "center", gap: 14, paddingTop: 60 },
   noCardIcon: { fontSize: 80 },
   noCardText: { fontFamily: "Changa_600SemiBold", fontSize: 16, color: C.mutedForeground },

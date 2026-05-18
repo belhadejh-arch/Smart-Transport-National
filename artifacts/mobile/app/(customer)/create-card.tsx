@@ -172,10 +172,15 @@ export default function CreateCard() {
           disabilityCertUrl: type === "special_needs" && specialDoc ? toDataUri(specialDoc) : undefined,
         },
       });
-      const msg = type === "standard" ? t.customer.cardActive : t.customer.pendingApproval;
-      Alert.alert(t.common.success, msg, [
-        { text: t.common.confirm, onPress: () => router.replace("/(customer)/my-card") },
-      ]);
+      if (type === "standard") {
+        // Standard card: active immediately — go straight to my-card
+        router.replace("/(customer)/my-card");
+      } else {
+        // Other cards: pending admin approval
+        Alert.alert(t.common.success, t.customer.pendingApproval, [
+          { text: t.common.confirm, onPress: () => router.replace("/(customer)/my-card") },
+        ]);
+      }
     } catch (e: any) {
       Alert.alert(t.common.error, e?.message ?? t.common.error);
     }

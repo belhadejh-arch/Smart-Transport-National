@@ -37,6 +37,7 @@ export default function DistributorProfile() {
 
         <View style={styles.infoCard}>
           {[
+            { label: "🪪 ID", value: `#${user?.id ?? "-"}` },
             { label: t.common.email, value: user?.email },
             { label: t.common.phone, value: user?.phone },
             { label: t.common.balance, value: `${Number(user?.balance ?? 0).toFixed(0)} ${t.common.dinar}` },

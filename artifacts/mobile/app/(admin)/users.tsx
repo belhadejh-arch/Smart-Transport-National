@@ -138,8 +138,14 @@ export default function AdminUsers() {
         <View style={styles.modalOverlay}>
           <View style={styles.modalCard}>
             <Text style={styles.modalTitle}>{modalUser?.name} {modalUser?.lastName}</Text>
+            <Text style={[styles.modalSub, { color: C.primary, fontFamily: "Changa_600SemiBold" }]}>ID: #{modalUser?.id}</Text>
             <Text style={styles.modalSub}>{modalUser?.email} • {modalUser?.phone}</Text>
             {modalUser?.licenseNumber && <Text style={styles.modalSub}>{t.admin.licenseNumber}: {modalUser.licenseNumber}</Text>}
+            {(modalUser?.role === "driver" || modalUser?.role === "distributor") && (
+              <Text style={[styles.modalSub, { color: C.success, fontFamily: "Changa_600SemiBold" }]}>
+                {t.common.balance}: {Number(modalUser?.balance ?? 0).toFixed(0)} {t.common.dinar}
+              </Text>
+            )}
 
             {/* Reset password */}
             <Text style={styles.modalSection}>{t.admin.resetPassword}</Text>
