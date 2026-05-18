@@ -1,6 +1,6 @@
 import { Router } from "express";
 import { db } from "@workspace/db";
-import { usersTable, cardsTable, transactionsTable } from "@workspace/db";
+import { usersTable, cardsTable, transactionsTable, distributorBalanceRequestsTable } from "@workspace/db";
 import { eq, desc, gte, sql, and } from "drizzle-orm";
 import { requireAuth, requireRole, AuthRequest } from "../middlewares/auth";
 
@@ -130,6 +130,75 @@ router.get("/transactions", async (req: AuthRequest, res) => {
       })),
       total: txs.length,
       totalEarnings,
+    });
+  } catch (err) {
+    req.log.error(err);
+    res.status(500).json({ error: "Server error" });
+  }
+});
+
+// ── Balance requests ─────────────────────────────────────────────────────────
+
+router.post("/balance-request", async (req: AuthRequest, res) => {
+  try {
+    const { amount, phone } = req.body as { amount: number; phone: string };
+    if (!amount || amount <= 0) {
+      res.status(400).json({ error: "المبلغ يجب أن يكون أكبر من صفر" });
+      return;
+    }
+    if (!phone?.trim()) {
+      res.status(400).json({ error: "رقم الهاتف مطلوب" });
+      return;
+    }
+
+    const [dist] = await db.select().from(usersTable).where(eq(usersTable.id, req.userId!)).limit(1);
+    if (!dist) { res.status(404).json({ error: "Not found" }); return; }
+
+    if (Number(dist.balance) > 0) {
+      res.status(400).json({ error: `لا يمكنك طلب رصيد جديد قبل استنفاد رصيدك الحالي (${Number(dist.balance).toLocaleString()} دج متبقية)` });
+      return;
+    }
+
+    const [existing] = await db
+      .select()
+      .from(distributorBalanceRequestsTable)
+      .where(and(
+        eq(distributorBalanceRequestsTable.distributorId, req.userId!),
+        eq(distributorBalanceRequestsTable.status, "pending")
+      ))
+      .limit(1);
+
+    if (existing) {
+      res.status(400).json({ error: "لديك طلب رصيد قيد الانتظار بالفعل. يرجى الانتظار حتى تتم معالجته." });
+      return;
+    }
+
+    const [request] = await db.insert(distributorBalanceRequestsTable).values({
+      distributorId: req.userId!,
+      amount: String(amount),
+      phone: phone.trim(),
+      status: "pending",
+    }).returning();
+
+    req.log.info({ distributorId: req.userId, amount, requestId: request.id }, "Balance request created");
+    res.status(201).json({ ...request, amount: Number(request.amount) });
+  } catch (err) {
+    req.log.error(err);
+    res.status(500).json({ error: "Server error" });
+  }
+});
+
+router.get("/balance-requests", async (req: AuthRequest, res) => {
+  try {
+    const requests = await db
+      .select()
+      .from(distributorBalanceRequestsTable)
+      .where(eq(distributorBalanceRequestsTable.distributorId, req.userId!))
+      .orderBy(desc(distributorBalanceRequestsTable.createdAt));
+
+    res.json({
+      requests: requests.map(r => ({ ...r, amount: Number(r.amount) })),
+      total: requests.length,
     });
   } catch (err) {
     req.log.error(err);

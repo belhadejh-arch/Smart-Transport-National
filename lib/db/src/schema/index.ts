@@ -4,3 +4,4 @@ export * from "./transactions";
 export * from "./withdrawalRequests";
 export * from "./passwordResetTokens";
 export * from "./driverPayments";
+export * from "./distributorBalanceRequests";

@@ -56,6 +56,10 @@ export default function AdminWithdrawals() {
         <Text style={s.paymentsLinkText}>💸 دفعات السائقين (الخصومات والوصولات)</Text>
         <Text style={s.paymentsLinkArrow}>←</Text>
       </TouchableOpacity>
+      <TouchableOpacity style={[s.paymentsLink, { marginTop: 6, borderColor: `${C.success}40`, backgroundColor: `${C.success}10` }]} onPress={() => router.push("/(admin)/balance-requests")} activeOpacity={0.85}>
+        <Text style={[s.paymentsLinkText, { color: C.success }]}>🏪 طلبات رصيد الموزعين</Text>
+        <Text style={[s.paymentsLinkArrow, { color: C.success }]}>←</Text>
+      </TouchableOpacity>
 
       <View style={s.filterRow}>
         {filters.map(f => (

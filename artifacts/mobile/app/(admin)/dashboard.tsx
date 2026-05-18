@@ -205,6 +205,22 @@ export default function AdminDashboard() {
           </TouchableOpacity>
         </View>
 
+        {isMainAdmin && (
+          <View style={s.section}>
+            <Text style={[s.sectionTitle, { textAlign: isRTL ? "right" : "left" }]}>🔧 إدارة المنصة</Text>
+            <View style={s.row}>
+              <TouchableOpacity style={[s.actionCard, { backgroundColor: "#1a4d5e", flex: 1 }]} onPress={() => router.push("/(admin)/balance-requests")} activeOpacity={0.8}>
+                <Text style={s.actionCardIcon}>🏪</Text>
+                <Text style={s.actionCardLabel}>طلبات رصيد الموزعين</Text>
+              </TouchableOpacity>
+              <TouchableOpacity style={[s.actionCard, { backgroundColor: "#4a3728", flex: 1 }]} onPress={() => router.push("/(admin)/backup")} activeOpacity={0.8}>
+                <Text style={s.actionCardIcon}>🗄️</Text>
+                <Text style={s.actionCardLabel}>النسخ الاحتياطية</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        )}
+
         <View style={s.section}>
           <Text style={[s.sectionTitle, { textAlign: isRTL ? "right" : "left" }]}>{t.common.create}</Text>
           <View style={s.row}>

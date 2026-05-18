@@ -17,16 +17,21 @@ import type {
 } from "@tanstack/react-query";
 
 import type {
+  AdminBalanceRequestsListResponse,
   AdminStats,
   AuthResponse,
+  BackupResponse,
   Card,
   CardsListResponse,
   ChangePasswordRequest,
+  CreateBalanceRequestBody,
   CreateCardRequest,
   CreateDriverPaymentRequest,
   CreateUserRequest,
   CustomerTopupRequest,
   CustomerTopupResponse,
+  DistributorBalanceRequest,
+  DistributorBalanceRequestsListResponse,
   DistributorBalancesResponse,
   DistributorDashboard,
   DistributorScanRequest,
@@ -37,6 +42,7 @@ import type {
   DriverPaymentsListResponse,
   DriverTripsResponse,
   ErrorResponse,
+  GetAdminBalanceRequestsParams,
   GetAdminCardsParams,
   GetAdminDriverPaymentsParams,
   GetAdminTransactionsParams,
@@ -47,6 +53,7 @@ import type {
   HealthStatus,
   LoginRequest,
   RegisterRequest,
+  RejectBalanceRequestBody,
   ResetPasswordRequest,
   ScanRequest,
   ScanResult,
@@ -2810,6 +2817,528 @@ export function useGetDriverPayments<
   request?: SecondParameter<typeof customFetch>;
 }): UseQueryResult<TData, TError> & { queryKey: QueryKey } {
   const queryOptions = getGetDriverPaymentsQueryOptions(options);
+
+  const query = useQuery(queryOptions) as UseQueryResult<TData, TError> & {
+    queryKey: QueryKey;
+  };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+/**
+ * @summary Submit a balance request (only when balance is 0)
+ */
+export const getCreateDistributorBalanceRequestUrl = () => {
+  return `/api/distributor/balance-request`;
+};
+
+export const createDistributorBalanceRequest = async (
+  createBalanceRequestBody: CreateBalanceRequestBody,
+  options?: RequestInit,
+): Promise<DistributorBalanceRequest> => {
+  return customFetch<DistributorBalanceRequest>(
+    getCreateDistributorBalanceRequestUrl(),
+    {
+      ...options,
+      method: "POST",
+      headers: { "Content-Type": "application/json", ...options?.headers },
+      body: JSON.stringify(createBalanceRequestBody),
+    },
+  );
+};
+
+export const getCreateDistributorBalanceRequestMutationOptions = <
+  TError = ErrorType<unknown>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof createDistributorBalanceRequest>>,
+    TError,
+    { data: BodyType<CreateBalanceRequestBody> },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationOptions<
+  Awaited<ReturnType<typeof createDistributorBalanceRequest>>,
+  TError,
+  { data: BodyType<CreateBalanceRequestBody> },
+  TContext
+> => {
+  const mutationKey = ["createDistributorBalanceRequest"];
+  const { mutation: mutationOptions, request: requestOptions } = options
+    ? options.mutation &&
+      "mutationKey" in options.mutation &&
+      options.mutation.mutationKey
+      ? options
+      : { ...options, mutation: { ...options.mutation, mutationKey } }
+    : { mutation: { mutationKey }, request: undefined };
+
+  const mutationFn: MutationFunction<
+    Awaited<ReturnType<typeof createDistributorBalanceRequest>>,
+    { data: BodyType<CreateBalanceRequestBody> }
+  > = (props) => {
+    const { data } = props ?? {};
+
+    return createDistributorBalanceRequest(data, requestOptions);
+  };
+
+  return { mutationFn, ...mutationOptions };
+};
+
+export type CreateDistributorBalanceRequestMutationResult = NonNullable<
+  Awaited<ReturnType<typeof createDistributorBalanceRequest>>
+>;
+export type CreateDistributorBalanceRequestMutationBody =
+  BodyType<CreateBalanceRequestBody>;
+export type CreateDistributorBalanceRequestMutationError = ErrorType<unknown>;
+
+/**
+ * @summary Submit a balance request (only when balance is 0)
+ */
+export const useCreateDistributorBalanceRequest = <
+  TError = ErrorType<unknown>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof createDistributorBalanceRequest>>,
+    TError,
+    { data: BodyType<CreateBalanceRequestBody> },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationResult<
+  Awaited<ReturnType<typeof createDistributorBalanceRequest>>,
+  TError,
+  { data: BodyType<CreateBalanceRequestBody> },
+  TContext
+> => {
+  return useMutation(
+    getCreateDistributorBalanceRequestMutationOptions(options),
+  );
+};
+
+/**
+ * @summary Get distributor's own balance requests
+ */
+export const getGetDistributorBalanceRequestsUrl = () => {
+  return `/api/distributor/balance-requests`;
+};
+
+export const getDistributorBalanceRequests = async (
+  options?: RequestInit,
+): Promise<DistributorBalanceRequestsListResponse> => {
+  return customFetch<DistributorBalanceRequestsListResponse>(
+    getGetDistributorBalanceRequestsUrl(),
+    {
+      ...options,
+      method: "GET",
+    },
+  );
+};
+
+export const getGetDistributorBalanceRequestsQueryKey = () => {
+  return [`/api/distributor/balance-requests`] as const;
+};
+
+export const getGetDistributorBalanceRequestsQueryOptions = <
+  TData = Awaited<ReturnType<typeof getDistributorBalanceRequests>>,
+  TError = ErrorType<unknown>,
+>(options?: {
+  query?: UseQueryOptions<
+    Awaited<ReturnType<typeof getDistributorBalanceRequests>>,
+    TError,
+    TData
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}) => {
+  const { query: queryOptions, request: requestOptions } = options ?? {};
+
+  const queryKey =
+    queryOptions?.queryKey ?? getGetDistributorBalanceRequestsQueryKey();
+
+  const queryFn: QueryFunction<
+    Awaited<ReturnType<typeof getDistributorBalanceRequests>>
+  > = ({ signal }) =>
+    getDistributorBalanceRequests({ signal, ...requestOptions });
+
+  return { queryKey, queryFn, ...queryOptions } as UseQueryOptions<
+    Awaited<ReturnType<typeof getDistributorBalanceRequests>>,
+    TError,
+    TData
+  > & { queryKey: QueryKey };
+};
+
+export type GetDistributorBalanceRequestsQueryResult = NonNullable<
+  Awaited<ReturnType<typeof getDistributorBalanceRequests>>
+>;
+export type GetDistributorBalanceRequestsQueryError = ErrorType<unknown>;
+
+/**
+ * @summary Get distributor's own balance requests
+ */
+
+export function useGetDistributorBalanceRequests<
+  TData = Awaited<ReturnType<typeof getDistributorBalanceRequests>>,
+  TError = ErrorType<unknown>,
+>(options?: {
+  query?: UseQueryOptions<
+    Awaited<ReturnType<typeof getDistributorBalanceRequests>>,
+    TError,
+    TData
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+  const queryOptions = getGetDistributorBalanceRequestsQueryOptions(options);
+
+  const query = useQuery(queryOptions) as UseQueryResult<TData, TError> & {
+    queryKey: QueryKey;
+  };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+/**
+ * @summary List all distributor balance requests
+ */
+export const getGetAdminBalanceRequestsUrl = (
+  params?: GetAdminBalanceRequestsParams,
+) => {
+  const normalizedParams = new URLSearchParams();
+
+  Object.entries(params || {}).forEach(([key, value]) => {
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? "null" : value.toString());
+    }
+  });
+
+  const stringifiedParams = normalizedParams.toString();
+
+  return stringifiedParams.length > 0
+    ? `/api/admin/balance-requests?${stringifiedParams}`
+    : `/api/admin/balance-requests`;
+};
+
+export const getAdminBalanceRequests = async (
+  params?: GetAdminBalanceRequestsParams,
+  options?: RequestInit,
+): Promise<AdminBalanceRequestsListResponse> => {
+  return customFetch<AdminBalanceRequestsListResponse>(
+    getGetAdminBalanceRequestsUrl(params),
+    {
+      ...options,
+      method: "GET",
+    },
+  );
+};
+
+export const getGetAdminBalanceRequestsQueryKey = (
+  params?: GetAdminBalanceRequestsParams,
+) => {
+  return [`/api/admin/balance-requests`, ...(params ? [params] : [])] as const;
+};
+
+export const getGetAdminBalanceRequestsQueryOptions = <
+  TData = Awaited<ReturnType<typeof getAdminBalanceRequests>>,
+  TError = ErrorType<unknown>,
+>(
+  params?: GetAdminBalanceRequestsParams,
+  options?: {
+    query?: UseQueryOptions<
+      Awaited<ReturnType<typeof getAdminBalanceRequests>>,
+      TError,
+      TData
+    >;
+    request?: SecondParameter<typeof customFetch>;
+  },
+) => {
+  const { query: queryOptions, request: requestOptions } = options ?? {};
+
+  const queryKey =
+    queryOptions?.queryKey ?? getGetAdminBalanceRequestsQueryKey(params);
+
+  const queryFn: QueryFunction<
+    Awaited<ReturnType<typeof getAdminBalanceRequests>>
+  > = ({ signal }) =>
+    getAdminBalanceRequests(params, { signal, ...requestOptions });
+
+  return { queryKey, queryFn, ...queryOptions } as UseQueryOptions<
+    Awaited<ReturnType<typeof getAdminBalanceRequests>>,
+    TError,
+    TData
+  > & { queryKey: QueryKey };
+};
+
+export type GetAdminBalanceRequestsQueryResult = NonNullable<
+  Awaited<ReturnType<typeof getAdminBalanceRequests>>
+>;
+export type GetAdminBalanceRequestsQueryError = ErrorType<unknown>;
+
+/**
+ * @summary List all distributor balance requests
+ */
+
+export function useGetAdminBalanceRequests<
+  TData = Awaited<ReturnType<typeof getAdminBalanceRequests>>,
+  TError = ErrorType<unknown>,
+>(
+  params?: GetAdminBalanceRequestsParams,
+  options?: {
+    query?: UseQueryOptions<
+      Awaited<ReturnType<typeof getAdminBalanceRequests>>,
+      TError,
+      TData
+    >;
+    request?: SecondParameter<typeof customFetch>;
+  },
+): UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+  const queryOptions = getGetAdminBalanceRequestsQueryOptions(params, options);
+
+  const query = useQuery(queryOptions) as UseQueryResult<TData, TError> & {
+    queryKey: QueryKey;
+  };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+/**
+ * @summary Approve balance request and transfer funds
+ */
+export const getApproveBalanceRequestUrl = (id: number) => {
+  return `/api/admin/balance-requests/${id}/approve`;
+};
+
+export const approveBalanceRequest = async (
+  id: number,
+  options?: RequestInit,
+): Promise<SuccessResponse> => {
+  return customFetch<SuccessResponse>(getApproveBalanceRequestUrl(id), {
+    ...options,
+    method: "POST",
+  });
+};
+
+export const getApproveBalanceRequestMutationOptions = <
+  TError = ErrorType<unknown>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof approveBalanceRequest>>,
+    TError,
+    { id: number },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationOptions<
+  Awaited<ReturnType<typeof approveBalanceRequest>>,
+  TError,
+  { id: number },
+  TContext
+> => {
+  const mutationKey = ["approveBalanceRequest"];
+  const { mutation: mutationOptions, request: requestOptions } = options
+    ? options.mutation &&
+      "mutationKey" in options.mutation &&
+      options.mutation.mutationKey
+      ? options
+      : { ...options, mutation: { ...options.mutation, mutationKey } }
+    : { mutation: { mutationKey }, request: undefined };
+
+  const mutationFn: MutationFunction<
+    Awaited<ReturnType<typeof approveBalanceRequest>>,
+    { id: number }
+  > = (props) => {
+    const { id } = props ?? {};
+
+    return approveBalanceRequest(id, requestOptions);
+  };
+
+  return { mutationFn, ...mutationOptions };
+};
+
+export type ApproveBalanceRequestMutationResult = NonNullable<
+  Awaited<ReturnType<typeof approveBalanceRequest>>
+>;
+
+export type ApproveBalanceRequestMutationError = ErrorType<unknown>;
+
+/**
+ * @summary Approve balance request and transfer funds
+ */
+export const useApproveBalanceRequest = <
+  TError = ErrorType<unknown>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof approveBalanceRequest>>,
+    TError,
+    { id: number },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationResult<
+  Awaited<ReturnType<typeof approveBalanceRequest>>,
+  TError,
+  { id: number },
+  TContext
+> => {
+  return useMutation(getApproveBalanceRequestMutationOptions(options));
+};
+
+/**
+ * @summary Reject balance request
+ */
+export const getRejectBalanceRequestUrl = (id: number) => {
+  return `/api/admin/balance-requests/${id}/reject`;
+};
+
+export const rejectBalanceRequest = async (
+  id: number,
+  rejectBalanceRequestBody: RejectBalanceRequestBody,
+  options?: RequestInit,
+): Promise<SuccessResponse> => {
+  return customFetch<SuccessResponse>(getRejectBalanceRequestUrl(id), {
+    ...options,
+    method: "POST",
+    headers: { "Content-Type": "application/json", ...options?.headers },
+    body: JSON.stringify(rejectBalanceRequestBody),
+  });
+};
+
+export const getRejectBalanceRequestMutationOptions = <
+  TError = ErrorType<unknown>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof rejectBalanceRequest>>,
+    TError,
+    { id: number; data: BodyType<RejectBalanceRequestBody> },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationOptions<
+  Awaited<ReturnType<typeof rejectBalanceRequest>>,
+  TError,
+  { id: number; data: BodyType<RejectBalanceRequestBody> },
+  TContext
+> => {
+  const mutationKey = ["rejectBalanceRequest"];
+  const { mutation: mutationOptions, request: requestOptions } = options
+    ? options.mutation &&
+      "mutationKey" in options.mutation &&
+      options.mutation.mutationKey
+      ? options
+      : { ...options, mutation: { ...options.mutation, mutationKey } }
+    : { mutation: { mutationKey }, request: undefined };
+
+  const mutationFn: MutationFunction<
+    Awaited<ReturnType<typeof rejectBalanceRequest>>,
+    { id: number; data: BodyType<RejectBalanceRequestBody> }
+  > = (props) => {
+    const { id, data } = props ?? {};
+
+    return rejectBalanceRequest(id, data, requestOptions);
+  };
+
+  return { mutationFn, ...mutationOptions };
+};
+
+export type RejectBalanceRequestMutationResult = NonNullable<
+  Awaited<ReturnType<typeof rejectBalanceRequest>>
+>;
+export type RejectBalanceRequestMutationBody =
+  BodyType<RejectBalanceRequestBody>;
+export type RejectBalanceRequestMutationError = ErrorType<unknown>;
+
+/**
+ * @summary Reject balance request
+ */
+export const useRejectBalanceRequest = <
+  TError = ErrorType<unknown>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof rejectBalanceRequest>>,
+    TError,
+    { id: number; data: BodyType<RejectBalanceRequestBody> },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationResult<
+  Awaited<ReturnType<typeof rejectBalanceRequest>>,
+  TError,
+  { id: number; data: BodyType<RejectBalanceRequestBody> },
+  TContext
+> => {
+  return useMutation(getRejectBalanceRequestMutationOptions(options));
+};
+
+/**
+ * @summary Full platform backup data (admin only)
+ */
+export const getGetAdminBackupUrl = () => {
+  return `/api/admin/backup`;
+};
+
+export const getAdminBackup = async (
+  options?: RequestInit,
+): Promise<BackupResponse> => {
+  return customFetch<BackupResponse>(getGetAdminBackupUrl(), {
+    ...options,
+    method: "GET",
+  });
+};
+
+export const getGetAdminBackupQueryKey = () => {
+  return [`/api/admin/backup`] as const;
+};
+
+export const getGetAdminBackupQueryOptions = <
+  TData = Awaited<ReturnType<typeof getAdminBackup>>,
+  TError = ErrorType<unknown>,
+>(options?: {
+  query?: UseQueryOptions<
+    Awaited<ReturnType<typeof getAdminBackup>>,
+    TError,
+    TData
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}) => {
+  const { query: queryOptions, request: requestOptions } = options ?? {};
+
+  const queryKey = queryOptions?.queryKey ?? getGetAdminBackupQueryKey();
+
+  const queryFn: QueryFunction<Awaited<ReturnType<typeof getAdminBackup>>> = ({
+    signal,
+  }) => getAdminBackup({ signal, ...requestOptions });
+
+  return { queryKey, queryFn, ...queryOptions } as UseQueryOptions<
+    Awaited<ReturnType<typeof getAdminBackup>>,
+    TError,
+    TData
+  > & { queryKey: QueryKey };
+};
+
+export type GetAdminBackupQueryResult = NonNullable<
+  Awaited<ReturnType<typeof getAdminBackup>>
+>;
+export type GetAdminBackupQueryError = ErrorType<unknown>;
+
+/**
+ * @summary Full platform backup data (admin only)
+ */
+
+export function useGetAdminBackup<
+  TData = Awaited<ReturnType<typeof getAdminBackup>>,
+  TError = ErrorType<unknown>,
+>(options?: {
+  query?: UseQueryOptions<
+    Awaited<ReturnType<typeof getAdminBackup>>,
+    TError,
+    TData
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+  const queryOptions = getGetAdminBackupQueryOptions(options);
 
   const query = useQuery(queryOptions) as UseQueryResult<TData, TError> & {
     queryKey: QueryKey;

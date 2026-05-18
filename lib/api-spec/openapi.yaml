@@ -695,6 +695,127 @@ paths:
               schema:
                 $ref: "#/components/schemas/DriverPaymentsListResponse"
 
+  /distributor/balance-request:
+    post:
+      operationId: createDistributorBalanceRequest
+      tags: [distributor]
+      summary: Submit a balance request (only when balance is 0)
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateBalanceRequestBody"
+      responses:
+        "201":
+          description: Request created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/DistributorBalanceRequest"
+
+  /distributor/balance-requests:
+    get:
+      operationId: getDistributorBalanceRequests
+      tags: [distributor]
+      summary: Get distributor's own balance requests
+      security:
+        - bearerAuth: []
+      responses:
+        "200":
+          description: Balance requests list
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/DistributorBalanceRequestsListResponse"
+
+  /admin/balance-requests:
+    get:
+      operationId: getAdminBalanceRequests
+      tags: [admin]
+      summary: List all distributor balance requests
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: status
+          in: query
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Balance requests list
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AdminBalanceRequestsListResponse"
+
+  /admin/balance-requests/{id}/approve:
+    post:
+      operationId: approveBalanceRequest
+      tags: [admin]
+      summary: Approve balance request and transfer funds
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Approved
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SuccessResponse"
+
+  /admin/balance-requests/{id}/reject:
+    post:
+      operationId: rejectBalanceRequest
+      tags: [admin]
+      summary: Reject balance request
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                note:
+                  type: string
+      responses:
+        "200":
+          description: Rejected
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SuccessResponse"
+
+  /admin/backup:
+    get:
+      operationId: getAdminBackup
+      tags: [admin]
+      summary: Full platform backup data (admin only)
+      security:
+        - bearerAuth: []
+      responses:
+        "200":
+          description: Full backup
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/BackupResponse"
+
   # CUSTOMER
   /customer/cards:
     get:
@@ -1621,3 +1742,155 @@ components:
         - payments
         - total
         - totalAmount
+
+    CreateBalanceRequestBody:
+      type: object
+      properties:
+        amount:
+          type: number
+        phone:
+          type: string
+      required:
+        - amount
+        - phone
+
+    DistributorBalanceRequest:
+      type: object
+      properties:
+        id:
+          type: integer
+        distributorId:
+          type: integer
+        amount:
+          type: number
+        phone:
+          type: string
+        status:
+          type: string
+        note:
+          type: string
+        adminId:
+          type: integer
+        createdAt:
+          type: string
+        updatedAt:
+          type: string
+        distributorName:
+          type: string
+        distributorLastName:
+          type: string
+        distributorEmail:
+          type: string
+      required:
+        - id
+        - distributorId
+        - amount
+        - phone
+        - status
+        - createdAt
+
+    DistributorBalanceRequestsListResponse:
+      type: object
+      properties:
+        requests:
+          type: array
+          items:
+            $ref: "#/components/schemas/DistributorBalanceRequest"
+        total:
+          type: integer
+      required:
+        - requests
+        - total
+
+    AdminBalanceRequestsListResponse:
+      type: object
+      properties:
+        requests:
+          type: array
+          items:
+            $ref: "#/components/schemas/DistributorBalanceRequest"
+        total:
+          type: integer
+        pendingCount:
+          type: integer
+      required:
+        - requests
+        - total
+        - pendingCount
+
+    BackupResponse:
+      type: object
+      properties:
+        generatedAt:
+          type: string
+        users:
+          type: object
+          properties:
+            all:
+              type: array
+              items:
+                type: object
+            admins:
+              type: array
+              items:
+                type: object
+            drivers:
+              type: array
+              items:
+                type: object
+            customers:
+              type: array
+              items:
+                type: object
+            distributors:
+              type: array
+              items:
+                type: object
+        cards:
+          type: array
+          items:
+            type: object
+        transactions:
+          type: array
+          items:
+            type: object
+        withdrawals:
+          type: array
+          items:
+            type: object
+        driverPayments:
+          type: array
+          items:
+            type: object
+        balanceRequests:
+          type: array
+          items:
+            type: object
+        stats:
+          type: object
+          properties:
+            totalUsers:
+              type: integer
+            totalCards:
+              type: integer
+            totalTransactions:
+              type: integer
+            totalWithdrawals:
+              type: integer
+            totalDriverPayments:
+              type: integer
+            totalBalanceRequests:
+              type: integer
+            totalPlatformEarnings:
+              type: number
+            totalDriverEarnings:
+              type: number
+      required:
+        - generatedAt
+        - users
+        - cards
+        - transactions
+        - withdrawals
+        - driverPayments
+        - balanceRequests
+        - stats

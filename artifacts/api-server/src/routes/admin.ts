@@ -1,7 +1,7 @@
 import { Router } from "express";
 import bcrypt from "bcryptjs";
 import { db } from "@workspace/db";
-import { usersTable, cardsTable, transactionsTable, withdrawalRequestsTable, driverPaymentsTable } from "@workspace/db";
+import { usersTable, cardsTable, transactionsTable, withdrawalRequestsTable, driverPaymentsTable, distributorBalanceRequestsTable } from "@workspace/db";
 import { eq, and, sql, gte, desc } from "drizzle-orm";
 import { requireAuth, requireRole, AuthRequest } from "../middlewares/auth";
 
@@ -379,6 +379,185 @@ router.post("/distributors/:id/topup", async (req: AuthRequest, res) => {
     await db.execute(sql`UPDATE users SET balance = balance + ${amount} WHERE id = ${Number(req.params.id)} AND role = 'distributor'`);
     const [updated] = await db.select().from(usersTable).where(eq(usersTable.id, Number(req.params.id))).limit(1);
     res.json({ success: true, message: `Added ${amount} DZD to distributor`, newBalance: Number(updated.balance) });
+  } catch (err) {
+    req.log.error(err);
+    res.status(500).json({ error: "Server error" });
+  }
+});
+
+// ── Distributor balance requests ─────────────────────────────────────────────
+
+router.get("/balance-requests", async (req: AuthRequest, res) => {
+  try {
+    const { status } = req.query as { status?: string };
+    const rows = await db
+      .select({
+        id: distributorBalanceRequestsTable.id,
+        distributorId: distributorBalanceRequestsTable.distributorId,
+        amount: distributorBalanceRequestsTable.amount,
+        phone: distributorBalanceRequestsTable.phone,
+        status: distributorBalanceRequestsTable.status,
+        note: distributorBalanceRequestsTable.note,
+        adminId: distributorBalanceRequestsTable.adminId,
+        createdAt: distributorBalanceRequestsTable.createdAt,
+        updatedAt: distributorBalanceRequestsTable.updatedAt,
+        distributorName: sql<string>`d.name`,
+        distributorLastName: sql<string>`d.last_name`,
+        distributorEmail: sql<string>`d.email`,
+      })
+      .from(distributorBalanceRequestsTable)
+      .leftJoin(sql`users d`, sql`d.id = ${distributorBalanceRequestsTable.distributorId}`)
+      .where(status ? eq(distributorBalanceRequestsTable.status, status) : sql`1=1`)
+      .orderBy(desc(distributorBalanceRequestsTable.createdAt));
+
+    const requests = rows.map(r => ({ ...r, amount: Number(r.amount) }));
+    const pendingCount = requests.filter(r => r.status === "pending").length;
+    res.json({ requests, total: requests.length, pendingCount });
+  } catch (err) {
+    req.log.error(err);
+    res.status(500).json({ error: "Server error" });
+  }
+});
+
+router.post("/balance-requests/:id/approve", async (req: AuthRequest, res) => {
+  try {
+    if (!isMainAdmin(req)) { res.status(403).json({ error: "Forbidden" }); return; }
+    const requestId = Number(req.params.id);
+
+    const [request] = await db
+      .select()
+      .from(distributorBalanceRequestsTable)
+      .where(eq(distributorBalanceRequestsTable.id, requestId))
+      .limit(1);
+
+    if (!request) { res.status(404).json({ error: "الطلب غير موجود" }); return; }
+    if (request.status !== "pending") {
+      res.status(400).json({ error: `الطلب ${request.status === "approved" ? "معتمد" : "مرفوض"} بالفعل` });
+      return;
+    }
+
+    const amount = Number(request.amount);
+    await db.transaction(async (tx) => {
+      await tx
+        .update(distributorBalanceRequestsTable)
+        .set({ status: "approved", adminId: req.userId, updatedAt: new Date() })
+        .where(eq(distributorBalanceRequestsTable.id, requestId));
+      await tx.execute(
+        sql`UPDATE users SET balance = balance::numeric + ${amount} WHERE id = ${request.distributorId}`
+      );
+    });
+
+    const [updated] = await db.select().from(usersTable).where(eq(usersTable.id, request.distributorId)).limit(1);
+    req.log.info({ adminId: req.userId, requestId, amount, distributorId: request.distributorId }, "Balance request approved");
+    res.json({ success: true, message: `تم تحويل ${amount.toLocaleString()} دج للموزع`, newBalance: Number(updated.balance) });
+  } catch (err) {
+    req.log.error(err);
+    res.status(500).json({ error: "Server error" });
+  }
+});
+
+router.post("/balance-requests/:id/reject", async (req: AuthRequest, res) => {
+  try {
+    if (!isMainAdmin(req)) { res.status(403).json({ error: "Forbidden" }); return; }
+    const requestId = Number(req.params.id);
+    const { note } = req.body as { note?: string };
+
+    const [request] = await db
+      .select()
+      .from(distributorBalanceRequestsTable)
+      .where(eq(distributorBalanceRequestsTable.id, requestId))
+      .limit(1);
+
+    if (!request) { res.status(404).json({ error: "الطلب غير موجود" }); return; }
+    if (request.status !== "pending") {
+      res.status(400).json({ error: "الطلب تم معالجته بالفعل" });
+      return;
+    }
+
+    await db
+      .update(distributorBalanceRequestsTable)
+      .set({ status: "rejected", adminId: req.userId, note: note ?? null, updatedAt: new Date() })
+      .where(eq(distributorBalanceRequestsTable.id, requestId));
+
+    res.json({ success: true, message: "تم رفض الطلب" });
+  } catch (err) {
+    req.log.error(err);
+    res.status(500).json({ error: "Server error" });
+  }
+});
+
+// ── Platform backup ───────────────────────────────────────────────────────────
+
+router.get("/backup", async (req: AuthRequest, res) => {
+  try {
+    if (!isMainAdmin(req)) { res.status(403).json({ error: "Forbidden" }); return; }
+
+    const [users, cards, transactions, withdrawals, driverPayments, balanceRequests] = await Promise.all([
+      db.select().from(usersTable).orderBy(usersTable.role, usersTable.id),
+      db.select().from(cardsTable).orderBy(desc(cardsTable.createdAt)),
+      db.select().from(transactionsTable).orderBy(desc(transactionsTable.createdAt)),
+      db.select().from(withdrawalRequestsTable).orderBy(desc(withdrawalRequestsTable.createdAt)),
+      db
+        .select({
+          id: driverPaymentsTable.id,
+          driverId: driverPaymentsTable.driverId,
+          adminId: driverPaymentsTable.adminId,
+          amount: driverPaymentsTable.amount,
+          note: driverPaymentsTable.note,
+          receiptNumber: driverPaymentsTable.receiptNumber,
+          createdAt: driverPaymentsTable.createdAt,
+          driverName: sql<string>`d.name`,
+          driverLastName: sql<string>`d.last_name`,
+        })
+        .from(driverPaymentsTable)
+        .leftJoin(sql`users d`, sql`d.id = ${driverPaymentsTable.driverId}`)
+        .orderBy(desc(driverPaymentsTable.createdAt)),
+      db
+        .select({
+          id: distributorBalanceRequestsTable.id,
+          distributorId: distributorBalanceRequestsTable.distributorId,
+          amount: distributorBalanceRequestsTable.amount,
+          phone: distributorBalanceRequestsTable.phone,
+          status: distributorBalanceRequestsTable.status,
+          createdAt: distributorBalanceRequestsTable.createdAt,
+          distributorName: sql<string>`d.name`,
+          distributorLastName: sql<string>`d.last_name`,
+        })
+        .from(distributorBalanceRequestsTable)
+        .leftJoin(sql`users d`, sql`d.id = ${distributorBalanceRequestsTable.distributorId}`)
+        .orderBy(desc(distributorBalanceRequestsTable.createdAt)),
+    ]);
+
+    const safeUsers = users.map(u => {
+      const { passwordHash: _, ...rest } = u;
+      return rest;
+    });
+
+    res.json({
+      generatedAt: new Date().toISOString(),
+      users: {
+        all: safeUsers,
+        admins: safeUsers.filter(u => u.role === "admin" || u.role === "sub_admin"),
+        drivers: safeUsers.filter(u => u.role === "driver"),
+        customers: safeUsers.filter(u => u.role === "customer"),
+        distributors: safeUsers.filter(u => u.role === "distributor"),
+      },
+      cards: cards.map(c => ({ ...c, balance: Number(c.balance) })),
+      transactions: transactions.map(t => ({ ...t, amount: Number(t.amount), platformFee: Number(t.platformFee), driverEarning: Number(t.driverEarning) })),
+      withdrawals: withdrawals.map(w => ({ ...w, amount: Number(w.amount) })),
+      driverPayments: driverPayments.map(p => ({ ...p, amount: Number(p.amount) })),
+      balanceRequests: balanceRequests.map(b => ({ ...b, amount: Number(b.amount) })),
+      stats: {
+        totalUsers: safeUsers.length,
+        totalCards: cards.length,
+        totalTransactions: transactions.length,
+        totalWithdrawals: withdrawals.length,
+        totalDriverPayments: driverPayments.length,
+        totalBalanceRequests: balanceRequests.length,
+        totalPlatformEarnings: transactions.reduce((s, t) => s + Number(t.platformFee), 0),
+        totalDriverEarnings: transactions.reduce((s, t) => s + Number(t.driverEarning), 0),
+      },
+    });
   } catch (err) {
     req.log.error(err);
     res.status(500).json({ error: "Server error" });

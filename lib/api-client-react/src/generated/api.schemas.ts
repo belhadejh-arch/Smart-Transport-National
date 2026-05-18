@@ -398,6 +398,87 @@ export interface DriverPaymentsListResponse {
   totalAmount: number;
 }
 
+export interface CreateBalanceRequestBody {
+  amount: number;
+  phone: string;
+}
+
+export interface DistributorBalanceRequest {
+  id: number;
+  distributorId: number;
+  amount: number;
+  phone: string;
+  status: string;
+  note?: string;
+  adminId?: number;
+  createdAt: string;
+  updatedAt?: string;
+  distributorName?: string;
+  distributorLastName?: string;
+  distributorEmail?: string;
+}
+
+export interface DistributorBalanceRequestsListResponse {
+  requests: DistributorBalanceRequest[];
+  total: number;
+}
+
+export interface AdminBalanceRequestsListResponse {
+  requests: DistributorBalanceRequest[];
+  total: number;
+  pendingCount: number;
+}
+
+export type BackupResponseUsersAllItem = { [key: string]: unknown };
+
+export type BackupResponseUsersAdminsItem = { [key: string]: unknown };
+
+export type BackupResponseUsersDriversItem = { [key: string]: unknown };
+
+export type BackupResponseUsersCustomersItem = { [key: string]: unknown };
+
+export type BackupResponseUsersDistributorsItem = { [key: string]: unknown };
+
+export type BackupResponseUsers = {
+  all?: BackupResponseUsersAllItem[];
+  admins?: BackupResponseUsersAdminsItem[];
+  drivers?: BackupResponseUsersDriversItem[];
+  customers?: BackupResponseUsersCustomersItem[];
+  distributors?: BackupResponseUsersDistributorsItem[];
+};
+
+export type BackupResponseCardsItem = { [key: string]: unknown };
+
+export type BackupResponseTransactionsItem = { [key: string]: unknown };
+
+export type BackupResponseWithdrawalsItem = { [key: string]: unknown };
+
+export type BackupResponseDriverPaymentsItem = { [key: string]: unknown };
+
+export type BackupResponseBalanceRequestsItem = { [key: string]: unknown };
+
+export type BackupResponseStats = {
+  totalUsers?: number;
+  totalCards?: number;
+  totalTransactions?: number;
+  totalWithdrawals?: number;
+  totalDriverPayments?: number;
+  totalBalanceRequests?: number;
+  totalPlatformEarnings?: number;
+  totalDriverEarnings?: number;
+};
+
+export interface BackupResponse {
+  generatedAt: string;
+  users: BackupResponseUsers;
+  cards: BackupResponseCardsItem[];
+  transactions: BackupResponseTransactionsItem[];
+  withdrawals: BackupResponseWithdrawalsItem[];
+  driverPayments: BackupResponseDriverPaymentsItem[];
+  balanceRequests: BackupResponseBalanceRequestsItem[];
+  stats: BackupResponseStats;
+}
+
 export type GetAdminUsersParams = {
   role?: GetAdminUsersRole;
   page?: number;
@@ -461,4 +542,12 @@ export type GetDriverTripsParams = {
 
 export type GetDriverDailyReportParams = {
   date?: string;
+};
+
+export type GetAdminBalanceRequestsParams = {
+  status?: string;
+};
+
+export type RejectBalanceRequestBody = {
+  note?: string;
 };

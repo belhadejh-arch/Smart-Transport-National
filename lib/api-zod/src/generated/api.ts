@@ -636,6 +636,122 @@ export const GetDriverPaymentsResponse = zod.object({
 });
 
 /**
+ * @summary Submit a balance request (only when balance is 0)
+ */
+export const CreateDistributorBalanceRequestBody = zod.object({
+  amount: zod.number(),
+  phone: zod.string(),
+});
+
+/**
+ * @summary Get distributor's own balance requests
+ */
+export const GetDistributorBalanceRequestsResponse = zod.object({
+  requests: zod.array(
+    zod.object({
+      id: zod.number(),
+      distributorId: zod.number(),
+      amount: zod.number(),
+      phone: zod.string(),
+      status: zod.string(),
+      note: zod.string().optional(),
+      adminId: zod.number().optional(),
+      createdAt: zod.string(),
+      updatedAt: zod.string().optional(),
+      distributorName: zod.string().optional(),
+      distributorLastName: zod.string().optional(),
+      distributorEmail: zod.string().optional(),
+    }),
+  ),
+  total: zod.number(),
+});
+
+/**
+ * @summary List all distributor balance requests
+ */
+export const GetAdminBalanceRequestsQueryParams = zod.object({
+  status: zod.coerce.string().optional(),
+});
+
+export const GetAdminBalanceRequestsResponse = zod.object({
+  requests: zod.array(
+    zod.object({
+      id: zod.number(),
+      distributorId: zod.number(),
+      amount: zod.number(),
+      phone: zod.string(),
+      status: zod.string(),
+      note: zod.string().optional(),
+      adminId: zod.number().optional(),
+      createdAt: zod.string(),
+      updatedAt: zod.string().optional(),
+      distributorName: zod.string().optional(),
+      distributorLastName: zod.string().optional(),
+      distributorEmail: zod.string().optional(),
+    }),
+  ),
+  total: zod.number(),
+  pendingCount: zod.number(),
+});
+
+/**
+ * @summary Approve balance request and transfer funds
+ */
+export const ApproveBalanceRequestParams = zod.object({
+  id: zod.coerce.number(),
+});
+
+export const ApproveBalanceRequestResponse = zod.object({
+  success: zod.boolean(),
+  message: zod.string().optional(),
+});
+
+/**
+ * @summary Reject balance request
+ */
+export const RejectBalanceRequestParams = zod.object({
+  id: zod.coerce.number(),
+});
+
+export const RejectBalanceRequestBody = zod.object({
+  note: zod.string().optional(),
+});
+
+export const RejectBalanceRequestResponse = zod.object({
+  success: zod.boolean(),
+  message: zod.string().optional(),
+});
+
+/**
+ * @summary Full platform backup data (admin only)
+ */
+export const GetAdminBackupResponse = zod.object({
+  generatedAt: zod.string(),
+  users: zod.object({
+    all: zod.array(zod.object({}).passthrough()).optional(),
+    admins: zod.array(zod.object({}).passthrough()).optional(),
+    drivers: zod.array(zod.object({}).passthrough()).optional(),
+    customers: zod.array(zod.object({}).passthrough()).optional(),
+    distributors: zod.array(zod.object({}).passthrough()).optional(),
+  }),
+  cards: zod.array(zod.object({}).passthrough()),
+  transactions: zod.array(zod.object({}).passthrough()),
+  withdrawals: zod.array(zod.object({}).passthrough()),
+  driverPayments: zod.array(zod.object({}).passthrough()),
+  balanceRequests: zod.array(zod.object({}).passthrough()),
+  stats: zod.object({
+    totalUsers: zod.number().optional(),
+    totalCards: zod.number().optional(),
+    totalTransactions: zod.number().optional(),
+    totalWithdrawals: zod.number().optional(),
+    totalDriverPayments: zod.number().optional(),
+    totalBalanceRequests: zod.number().optional(),
+    totalPlatformEarnings: zod.number().optional(),
+    totalDriverEarnings: zod.number().optional(),
+  }),
+});
+
+/**
  * @summary Get customer cards
  */
 export const GetCustomerCardsResponse = zod.object({

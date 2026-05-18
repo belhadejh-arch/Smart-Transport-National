@@ -1,5 +1,5 @@
 import React from "react";
-import { View, Text, StyleSheet, TouchableOpacity, Alert, Switch } from "react-native";
+import { View, Text, StyleSheet, TouchableOpacity, Alert, Switch, Linking, ScrollView } from "react-native";
 import { router } from "expo-router";
 import { useAuth } from "@/context/AuthContext";
 import { useLanguage } from "@/context/LanguageContext";
@@ -30,7 +30,7 @@ export default function DistributorProfile() {
   return (
     <View style={s.screen}>
       <Header title={t.distributor.profile} />
-      <View style={s.content}>
+      <ScrollView style={{ flex: 1 }} contentContainerStyle={s.content}>
         <View style={[s.avatar, { backgroundColor: C.accent }]}>
           <Text style={s.avatarText}>{user?.name?.[0]?.toUpperCase() ?? "D"}</Text>
         </View>
@@ -61,13 +61,40 @@ export default function DistributorProfile() {
           </View>
         </View>
 
+        {/* Balance Request shortcut */}
+        <TouchableOpacity
+          style={s.balanceReqBtn}
+          onPress={() => router.push("/(distributor)/balance-request")}
+          activeOpacity={0.85}
+        >
+          <Text style={s.balanceReqIcon}>💳</Text>
+          <View style={{ flex: 1 }}>
+            <Text style={s.balanceReqTitle}>طلب رصيد من المنصة</Text>
+            <Text style={s.balanceReqSub}>اطلب رصيداً جديداً عند نفاد رصيدك</Text>
+          </View>
+          <Text style={{ fontSize: 20, color: "#FFF" }}>›</Text>
+        </TouchableOpacity>
+
+        {/* Support contact */}
+        <View style={s.supportCard}>
+          <Text style={s.supportTitle}>📞 مراسلة الدعم</Text>
+          <Text style={s.supportSub}>تواصل مع فريق الدعم الفني للمساعدة</Text>
+          <TouchableOpacity style={s.supportBtn} onPress={() => Linking.openURL("tel:0774148015")} activeOpacity={0.85}>
+            <Text style={s.supportBtnText}>📲 0774148015</Text>
+          </TouchableOpacity>
+          <TouchableOpacity style={s.whatsappBtn} onPress={() => Linking.openURL("https://wa.me/213774148015")} activeOpacity={0.85}>
+            <Text style={s.whatsappBtnText}>💬 واتساب</Text>
+          </TouchableOpacity>
+        </View>
+
         <TouchableOpacity style={s.switchBtn} onPress={switchAccount}>
           <Text style={s.switchBtnText}>↔ {t.common.switchAccount}</Text>
         </TouchableOpacity>
         <TouchableOpacity style={s.logoutBtn} onPress={confirmLogout}>
           <Text style={s.logoutBtnText}>⏻ {t.common.logout}</Text>
         </TouchableOpacity>
-      </View>
+        <View style={{ height: 20 }} />
+      </ScrollView>
       <TabBar tabs={tabs} activeKey="profile" />
     </View>
   );
@@ -86,6 +113,24 @@ function makeStyles(C: any) {
     infoLabel: { fontFamily: "Changa_500Medium", fontSize: 14, color: C.mutedForeground },
     infoValue: { fontFamily: "Changa_600SemiBold", fontSize: 14, color: C.foreground },
     themeRow: { flexDirection: "row", justifyContent: "space-between", alignItems: "center", paddingVertical: 10 },
+    balanceReqBtn: {
+      backgroundColor: C.primary, borderRadius: 14, padding: 16,
+      flexDirection: "row", alignItems: "center", gap: 12, width: "100%",
+      shadowColor: C.primary, shadowOpacity: 0.3, shadowRadius: 8, elevation: 5,
+    },
+    balanceReqIcon: { fontSize: 28 },
+    balanceReqTitle: { fontFamily: "Changa_700Bold", fontSize: 15, color: "#FFF" },
+    balanceReqSub: { fontFamily: "Changa_400Regular", fontSize: 12, color: "rgba(255,255,255,0.75)", marginTop: 2 },
+    supportCard: {
+      backgroundColor: C.card, borderRadius: 16, padding: 16, width: "100%",
+      borderWidth: 1.5, borderColor: `${C.primary}40`, gap: 8, alignItems: "center",
+    },
+    supportTitle: { fontFamily: "Changa_700Bold", fontSize: 16, color: C.foreground },
+    supportSub: { fontFamily: "Changa_400Regular", fontSize: 12, color: C.mutedForeground, textAlign: "center" },
+    supportBtn: { backgroundColor: C.primary, borderRadius: 12, padding: 13, width: "100%", alignItems: "center" },
+    supportBtnText: { fontFamily: "Changa_700Bold", fontSize: 16, color: "#FFF" },
+    whatsappBtn: { backgroundColor: "#25D366", borderRadius: 12, padding: 12, width: "100%", alignItems: "center" },
+    whatsappBtnText: { fontFamily: "Changa_600SemiBold", fontSize: 15, color: "#FFF" },
     switchBtn: { backgroundColor: C.secondary, borderRadius: 12, padding: 14, width: "100%", alignItems: "center" },
     switchBtnText: { fontFamily: "Changa_600SemiBold", fontSize: 16, color: C.primary },
     logoutBtn: { backgroundColor: C.destructive, borderRadius: 12, padding: 14, width: "100%", alignItems: "center" },

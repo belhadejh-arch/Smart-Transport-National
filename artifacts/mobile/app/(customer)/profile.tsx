@@ -129,6 +129,26 @@ export default function CustomerProfile() {
           </TouchableOpacity>
         </View>
 
+        {/* Support contact */}
+        <View style={s.card}>
+          <Text style={s.cardTitle}>📞 مراسلة الدعم</Text>
+          <Text style={[s.infoLabel, { marginBottom: 10 }]}>تواصل مع فريق الدعم الفني للمساعدة</Text>
+          <TouchableOpacity
+            style={[s.modalBtn, { backgroundColor: "#2C6B7F", marginBottom: 6 }]}
+            onPress={() => { const { Linking } = require("react-native"); Linking.openURL("tel:0774148015"); }}
+            activeOpacity={0.85}
+          >
+            <Text style={s.modalBtnText}>📲 0774148015</Text>
+          </TouchableOpacity>
+          <TouchableOpacity
+            style={[s.modalBtn, { backgroundColor: "#25D366" }]}
+            onPress={() => { const { Linking } = require("react-native"); Linking.openURL("https://wa.me/213774148015"); }}
+            activeOpacity={0.85}
+          >
+            <Text style={s.modalBtnText}>💬 واتساب</Text>
+          </TouchableOpacity>
+        </View>
+
         {/* Logout */}
         <TouchableOpacity
           style={s.logoutBtn}
