@@ -980,6 +980,174 @@ export const useResetUserPassword = <
 };
 
 /**
+ * @summary Reset user balance to zero (main admin only)
+ */
+export const getResetUserBalanceUrl = (id: number) => {
+  return `/api/admin/users/${id}/reset-balance`;
+};
+
+export const resetUserBalance = async (
+  id: number,
+  options?: RequestInit,
+): Promise<SuccessResponse> => {
+  return customFetch<SuccessResponse>(getResetUserBalanceUrl(id), {
+    ...options,
+    method: "POST",
+  });
+};
+
+export const getResetUserBalanceMutationOptions = <
+  TError = ErrorType<unknown>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof resetUserBalance>>,
+    TError,
+    { id: number },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationOptions<
+  Awaited<ReturnType<typeof resetUserBalance>>,
+  TError,
+  { id: number },
+  TContext
+> => {
+  const mutationKey = ["resetUserBalance"];
+  const { mutation: mutationOptions, request: requestOptions } = options
+    ? options.mutation &&
+      "mutationKey" in options.mutation &&
+      options.mutation.mutationKey
+      ? options
+      : { ...options, mutation: { ...options.mutation, mutationKey } }
+    : { mutation: { mutationKey }, request: undefined };
+
+  const mutationFn: MutationFunction<
+    Awaited<ReturnType<typeof resetUserBalance>>,
+    { id: number }
+  > = (props) => {
+    const { id } = props ?? {};
+
+    return resetUserBalance(id, requestOptions);
+  };
+
+  return { mutationFn, ...mutationOptions };
+};
+
+export type ResetUserBalanceMutationResult = NonNullable<
+  Awaited<ReturnType<typeof resetUserBalance>>
+>;
+
+export type ResetUserBalanceMutationError = ErrorType<unknown>;
+
+/**
+ * @summary Reset user balance to zero (main admin only)
+ */
+export const useResetUserBalance = <
+  TError = ErrorType<unknown>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof resetUserBalance>>,
+    TError,
+    { id: number },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationResult<
+  Awaited<ReturnType<typeof resetUserBalance>>,
+  TError,
+  { id: number },
+  TContext
+> => {
+  return useMutation(getResetUserBalanceMutationOptions(options));
+};
+
+/**
+ * @summary Delete a user (main admin only, driver or distributor)
+ */
+export const getDeleteUserUrl = (id: number) => {
+  return `/api/admin/users/${id}/delete`;
+};
+
+export const deleteUser = async (
+  id: number,
+  options?: RequestInit,
+): Promise<SuccessResponse> => {
+  return customFetch<SuccessResponse>(getDeleteUserUrl(id), {
+    ...options,
+    method: "POST",
+  });
+};
+
+export const getDeleteUserMutationOptions = <
+  TError = ErrorType<unknown>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof deleteUser>>,
+    TError,
+    { id: number },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationOptions<
+  Awaited<ReturnType<typeof deleteUser>>,
+  TError,
+  { id: number },
+  TContext
+> => {
+  const mutationKey = ["deleteUser"];
+  const { mutation: mutationOptions, request: requestOptions } = options
+    ? options.mutation &&
+      "mutationKey" in options.mutation &&
+      options.mutation.mutationKey
+      ? options
+      : { ...options, mutation: { ...options.mutation, mutationKey } }
+    : { mutation: { mutationKey }, request: undefined };
+
+  const mutationFn: MutationFunction<
+    Awaited<ReturnType<typeof deleteUser>>,
+    { id: number }
+  > = (props) => {
+    const { id } = props ?? {};
+
+    return deleteUser(id, requestOptions);
+  };
+
+  return { mutationFn, ...mutationOptions };
+};
+
+export type DeleteUserMutationResult = NonNullable<
+  Awaited<ReturnType<typeof deleteUser>>
+>;
+
+export type DeleteUserMutationError = ErrorType<unknown>;
+
+/**
+ * @summary Delete a user (main admin only, driver or distributor)
+ */
+export const useDeleteUser = <
+  TError = ErrorType<unknown>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof deleteUser>>,
+    TError,
+    { id: number },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationResult<
+  Awaited<ReturnType<typeof deleteUser>>,
+  TError,
+  { id: number },
+  TContext
+> => {
+  return useMutation(getDeleteUserMutationOptions(options));
+};
+
+/**
  * @summary Get all cards
  */
 export const getGetAdminCardsUrl = (params?: GetAdminCardsParams) => {

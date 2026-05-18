@@ -207,6 +207,30 @@ export const ResetUserPasswordResponse = zod.object({
 });
 
 /**
+ * @summary Reset user balance to zero (main admin only)
+ */
+export const ResetUserBalanceParams = zod.object({
+  id: zod.coerce.number(),
+});
+
+export const ResetUserBalanceResponse = zod.object({
+  success: zod.boolean(),
+  message: zod.string().optional(),
+});
+
+/**
+ * @summary Delete a user (main admin only, driver or distributor)
+ */
+export const DeleteUserParams = zod.object({
+  id: zod.coerce.number(),
+});
+
+export const DeleteUserResponse = zod.object({
+  success: zod.boolean(),
+  message: zod.string().optional(),
+});
+
+/**
  * @summary Get all cards
  */
 export const GetAdminCardsQueryParams = zod.object({

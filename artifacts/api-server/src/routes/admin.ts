@@ -167,6 +167,54 @@ router.post("/users/:id/reset-password", async (req: AuthRequest, res) => {
   }
 });
 
+// Reset balance to zero — main admin only
+router.post("/users/:id/reset-balance", async (req: AuthRequest, res) => {
+  if (!isMainAdmin(req)) {
+    res.status(403).json({ error: "Only main admin can reset balances" });
+    return;
+  }
+  try {
+    const userId = Number(req.params.id);
+    const [user] = await db.select().from(usersTable).where(eq(usersTable.id, userId)).limit(1);
+    if (!user) { res.status(404).json({ error: "User not found" }); return; }
+    if (!["driver", "distributor"].includes(user.role)) {
+      res.status(400).json({ error: "Can only reset balance for drivers or distributors" });
+      return;
+    }
+    await db.update(usersTable).set({ balance: "0" }).where(eq(usersTable.id, userId));
+    res.json({ success: true, message: "Balance reset to zero" });
+  } catch (err) {
+    req.log.error(err);
+    res.status(500).json({ error: "Server error" });
+  }
+});
+
+// Delete user — main admin only, drivers and distributors only
+router.post("/users/:id/delete", async (req: AuthRequest, res) => {
+  if (!isMainAdmin(req)) {
+    res.status(403).json({ error: "Only main admin can delete users" });
+    return;
+  }
+  try {
+    const userId = Number(req.params.id);
+    const [user] = await db.select().from(usersTable).where(eq(usersTable.id, userId)).limit(1);
+    if (!user) { res.status(404).json({ error: "User not found" }); return; }
+    if (!["driver", "distributor", "customer"].includes(user.role)) {
+      res.status(400).json({ error: "Cannot delete admin accounts" });
+      return;
+    }
+    // Delete related data first
+    if (user.role === "driver") {
+      await db.delete(withdrawalRequestsTable).where(eq(withdrawalRequestsTable.driverId, userId));
+    }
+    await db.delete(usersTable).where(eq(usersTable.id, userId));
+    res.json({ success: true, message: "User deleted" });
+  } catch (err) {
+    req.log.error(err);
+    res.status(500).json({ error: "Server error" });
+  }
+});
+
 // ── Driver earnings (main admin only) ────────────────────────────────────────
 router.get("/driver-earnings", async (req: AuthRequest, res) => {
   if (!isMainAdmin(req)) {
