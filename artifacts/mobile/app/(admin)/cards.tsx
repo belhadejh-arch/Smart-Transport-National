@@ -22,6 +22,7 @@ export default function AdminCards() {
     { key: "users", icon: "👥", label: t.admin.users, onPress: () => router.replace("/(admin)/users") },
     { key: "cards", icon: "💳", label: t.admin.cards, onPress: () => {} },
     { key: "withdrawals", icon: "💰", label: t.admin.withdrawals, onPress: () => router.replace("/(admin)/withdrawals") },
+    { key: "profile", icon: "👤", label: t.admin.profile, onPress: () => router.replace("/(admin)/profile") },
   ];
 
   const filters: { key: StatusFilter; label: string }[] = [

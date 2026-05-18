@@ -12,14 +12,21 @@ import React, { useEffect, useState } from "react";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
 import { KeyboardProvider } from "react-native-keyboard-controller";
 import { SafeAreaProvider } from "react-native-safe-area-context";
+import Toast from "react-native-toast-message";
 import { ErrorBoundary } from "@/components/ErrorBoundary";
 import { SplashIntro } from "@/components/SplashIntro";
 import { AuthProvider, useAuth } from "@/context/AuthContext";
 import { LanguageProvider, useLanguage } from "@/context/LanguageContext";
+import { ThemeProvider } from "@/context/ThemeContext";
 
 SplashScreen.preventAutoHideAsync();
 
-const queryClient = new QueryClient();
+const queryClient = new QueryClient({
+  defaultOptions: {
+    queries: { retry: 1, staleTime: 30_000 },
+    mutations: { retry: 0 },
+  },
+});
 
 function RootLayoutNav() {
   const { isLoading } = useAuth();
@@ -69,15 +76,18 @@ export default function RootLayout() {
         <QueryClientProvider client={queryClient}>
           <GestureHandlerRootView style={{ flex: 1 }}>
             <KeyboardProvider>
-              <LanguageProvider>
-                <AuthProvider>
-                  <RootLayoutNav />
-                </AuthProvider>
-              </LanguageProvider>
+              <ThemeProvider>
+                <LanguageProvider>
+                  <AuthProvider>
+                    <RootLayoutNav />
+                  </AuthProvider>
+                </LanguageProvider>
+              </ThemeProvider>
             </KeyboardProvider>
           </GestureHandlerRootView>
         </QueryClientProvider>
       </ErrorBoundary>
+      <Toast />
     </SafeAreaProvider>
   );
 }

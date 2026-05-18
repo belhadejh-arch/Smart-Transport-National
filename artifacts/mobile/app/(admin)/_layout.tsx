@@ -9,6 +9,7 @@ export default function AdminLayout() {
       <Stack.Screen name="cards" />
       <Stack.Screen name="withdrawals" />
       <Stack.Screen name="create-user" />
+      <Stack.Screen name="profile" />
     </Stack>
   );
 }

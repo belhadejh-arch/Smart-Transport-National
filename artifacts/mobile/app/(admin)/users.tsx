@@ -29,6 +29,7 @@ export default function AdminUsers() {
     { key: "users", icon: "👥", label: t.admin.users, onPress: () => {} },
     { key: "cards", icon: "💳", label: t.admin.cards, onPress: () => router.replace("/(admin)/cards") },
     { key: "withdrawals", icon: "💰", label: t.admin.withdrawals, onPress: () => router.replace("/(admin)/withdrawals") },
+    { key: "profile", icon: "👤", label: t.admin.profile, onPress: () => router.replace("/(admin)/profile") },
   ];
 
   const filters: { key: RoleFilter; label: string }[] = [

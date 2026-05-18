@@ -26,6 +26,7 @@ export default function AdminDashboard() {
     { key: "users", icon: "👥", label: t.admin.users, onPress: () => router.push("/(admin)/users") },
     { key: "cards", icon: "💳", label: t.admin.cards, onPress: () => router.push("/(admin)/cards") },
     { key: "withdrawals", icon: "💰", label: t.admin.withdrawals, onPress: () => router.push("/(admin)/withdrawals") },
+    { key: "profile", icon: "👤", label: t.admin.profile, onPress: () => router.push("/(admin)/profile") },
   ];
 
   function confirmLogout() {

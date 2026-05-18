@@ -20,6 +20,7 @@ export default function AdminWithdrawals() {
     { key: "users", icon: "👥", label: t.admin.users, onPress: () => router.replace("/(admin)/users") },
     { key: "cards", icon: "💳", label: t.admin.cards, onPress: () => router.replace("/(admin)/cards") },
     { key: "withdrawals", icon: "💰", label: t.admin.withdrawals, onPress: () => {} },
+    { key: "profile", icon: "👤", label: t.admin.profile, onPress: () => router.replace("/(admin)/profile") },
   ];
 
   const filters = [

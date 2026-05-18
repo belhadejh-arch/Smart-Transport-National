@@ -2,6 +2,7 @@ import React, { useState, useRef } from "react";
 import { View, Text, StyleSheet, TouchableOpacity, Alert, Modal, Platform, ActivityIndicator } from "react-native";
 import { CameraView, useCameraPermissions } from "expo-camera";
 import { router } from "expo-router";
+import * as Haptics from "expo-haptics";
 import { useDriverScanCard } from "@workspace/api-client-react";
 import { useLanguage } from "@/context/LanguageContext";
 import { Header } from "@/components/Header";
@@ -28,11 +29,20 @@ export default function DriverScan() {
   async function handleBarCodeScanned({ data }: { data: string }) {
     if (scanned || isPending) return;
     setScanned(true);
+    if (Platform.OS !== "web") {
+      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    }
     try {
       const res = await scan({ data: { cardNumber: data } });
       setResult(res);
       setShowResult(true);
+      if (Platform.OS !== "web") {
+        Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+      }
     } catch (e: any) {
+      if (Platform.OS !== "web") {
+        Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
+      }
       Alert.alert(t.common.error, e?.message ?? t.driver.invalidCard, [
         { text: t.common.close, onPress: () => setScanned(false) },
       ]);

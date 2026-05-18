@@ -30,6 +30,7 @@ router.post("/login", async (req, res) => {
     }
     const token = signToken(user.id, user.role);
     const { passwordHash: _, ...userOut } = user;
+    req.log.info({ userId: user.id, role: user.role, ip: req.ip }, "User login");
     res.json({ token, user: { ...userOut, balance: Number(userOut.balance) } });
   } catch (err) {
     req.log.error(err);
@@ -88,13 +89,52 @@ router.get("/me", requireAuth, async (req: AuthRequest, res) => {
 router.post("/change-password", requireAuth, async (req: AuthRequest, res) => {
   try {
     const { currentPassword, newPassword } = req.body as { currentPassword: string; newPassword: string };
+    if (!currentPassword || !newPassword) {
+      res.status(400).json({ error: "All fields required" });
+      return;
+    }
+    if (newPassword.length < 6) {
+      res.status(400).json({ error: "Password must be at least 6 characters" });
+      return;
+    }
     const [user] = await db.select().from(usersTable).where(eq(usersTable.id, req.userId!)).limit(1);
     if (!user) { res.status(404).json({ error: "Not found" }); return; }
     const valid = await bcrypt.compare(currentPassword, user.passwordHash);
     if (!valid) { res.status(400).json({ error: "Current password incorrect" }); return; }
     const passwordHash = await bcrypt.hash(newPassword, 10);
     await db.update(usersTable).set({ passwordHash }).where(eq(usersTable.id, req.userId!));
+    req.log.info({ userId: req.userId }, "Password changed");
     res.json({ success: true, message: "Password changed" });
+  } catch (err) {
+    req.log.error(err);
+    res.status(500).json({ error: "Server error" });
+  }
+});
+
+router.put("/change-email", requireAuth, async (req: AuthRequest, res) => {
+  try {
+    const { currentPassword, newEmail } = req.body as { currentPassword: string; newEmail: string };
+    if (!currentPassword || !newEmail) {
+      res.status(400).json({ error: "All fields required" });
+      return;
+    }
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(newEmail)) {
+      res.status(400).json({ error: "Invalid email format" });
+      return;
+    }
+    const [user] = await db.select().from(usersTable).where(eq(usersTable.id, req.userId!)).limit(1);
+    if (!user) { res.status(404).json({ error: "Not found" }); return; }
+    const valid = await bcrypt.compare(currentPassword, user.passwordHash);
+    if (!valid) { res.status(400).json({ error: "Current password incorrect" }); return; }
+    const [existing] = await db.select().from(usersTable).where(eq(usersTable.email, newEmail.toLowerCase())).limit(1);
+    if (existing && existing.id !== req.userId) {
+      res.status(400).json({ error: "Email already in use" });
+      return;
+    }
+    await db.update(usersTable).set({ email: newEmail.toLowerCase() }).where(eq(usersTable.id, req.userId!));
+    req.log.info({ userId: req.userId, newEmail }, "Email changed");
+    res.json({ success: true, message: "Email updated", newEmail: newEmail.toLowerCase() });
   } catch (err) {
     req.log.error(err);
     res.status(500).json({ error: "Server error" });
