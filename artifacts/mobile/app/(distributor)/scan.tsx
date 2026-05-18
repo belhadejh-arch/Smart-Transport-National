@@ -3,7 +3,7 @@ import {
   View, Text, TouchableOpacity, Modal, ActivityIndicator,
   ScrollView, TextInput, KeyboardAvoidingView, Platform, Animated,
 } from "react-native";
-import { CameraView, useCameraPermissions } from "expo-camera";
+import { CameraView } from "expo-camera";
 import { router } from "expo-router";
 import * as Haptics from "expo-haptics";
 import { useDistributorScanCard } from "@workspace/api-client-react";
@@ -28,7 +28,6 @@ const AMOUNTS = [
 export default function DistributorScan() {
   const { t } = useLanguage();
   const { C } = useTheme();
-  const [permission, requestPermission] = useCameraPermissions();
   const [scanned, setScanned] = useState(false);
   const [scannedCard, setScannedCard] = useState("");
   const [showAmountModal, setShowAmountModal] = useState(false);
@@ -40,10 +39,6 @@ export default function DistributorScan() {
   const [processing, setProcessing] = useState(false);
   const { mutateAsync: scan } = useDistributorScanCard();
   const cooldown = useRef(false);
-
-  useEffect(() => {
-    requestPermission();
-  }, []);
 
   const tabs = [
     { key: "dashboard", icon: "📊", label: t.distributor.dashboard, onPress: () => router.replace("/(distributor)/dashboard") },
@@ -109,43 +104,6 @@ export default function DistributorScan() {
     setScannedCard("");
     setManualCard("");
     cooldown.current = false;
-  }
-
-  /* ── Permission required ── */
-  if (!permission?.granted) {
-    return (
-      <View style={{ flex: 1, backgroundColor: C.background }}>
-        <Header title={t.distributor.scanTitle} />
-        <View style={{ flex: 1, alignItems: "center", justifyContent: "center", padding: 32, gap: 20 }}>
-          <Text style={{ fontSize: 72 }}>📷</Text>
-          <Text style={{ fontFamily: "Changa_700Bold", fontSize: 18, color: C.foreground, textAlign: "center" }}>
-            {t.camera.permissionTitle}
-          </Text>
-          <Text style={{ fontFamily: "Changa_400Regular", fontSize: 14, color: C.mutedForeground, textAlign: "center" }}>
-            {t.camera.permissionSubDist}
-          </Text>
-          {!permission || permission.status === "undetermined" ? (
-            <ActivityIndicator color={C.accent} size="large" />
-          ) : (
-            <TouchableOpacity
-              style={{ backgroundColor: C.accent, borderRadius: 14, padding: 16, paddingHorizontal: 40 }}
-              onPress={requestPermission}
-            >
-              <Text style={{ fontFamily: "Changa_700Bold", fontSize: 16, color: "#FFF" }}>{t.camera.allow}</Text>
-            </TouchableOpacity>
-          )}
-          <TouchableOpacity onPress={openManual}>
-            <Text style={{ fontFamily: "Changa_500Medium", fontSize: 14, color: C.mutedForeground, textDecorationLine: "underline" }}>
-              {t.camera.orManual}
-            </Text>
-          </TouchableOpacity>
-        </View>
-        <TabBar tabs={tabs} activeKey="scan" />
-        <ManualModal visible={showManual} value={manualCard} onChange={setManualCard} onSubmit={handleManualConfirm} onClose={() => setShowManual(false)} C={C} />
-        <AmountModal visible={showAmountModal} selected={selectedAmount} onSelect={setSelectedAmount} onConfirm={handleTopup} onCancel={handleCancelAmount} processing={processing} C={C} />
-        <ResultModal visible={showResult} result={result} onClose={handleClose} C={C} />
-      </View>
-    );
   }
 
   /* ── Camera scanner ── */
