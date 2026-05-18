@@ -1322,6 +1322,10 @@ components:
           type: integer
         totalTopups:
           type: integer
+        todayEarnings:
+          type: number
+        totalEarnings:
+          type: number
         recentTransactions:
           type: array
           items:

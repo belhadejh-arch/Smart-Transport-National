@@ -331,6 +331,8 @@ export interface DistributorDashboard {
   balance: number;
   todayTopups: number;
   totalTopups: number;
+  todayEarnings?: number;
+  totalEarnings?: number;
   recentTransactions: Transaction[];
 }
 

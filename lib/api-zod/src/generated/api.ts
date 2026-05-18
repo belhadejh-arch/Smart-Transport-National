@@ -606,6 +606,8 @@ export const GetDistributorDashboardResponse = zod.object({
   balance: zod.number(),
   todayTopups: zod.number(),
   totalTopups: zod.number(),
+  todayEarnings: zod.number().optional(),
+  totalEarnings: zod.number().optional(),
   recentTransactions: zod.array(
     zod.object({
       id: zod.number(),
