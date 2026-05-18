@@ -14,7 +14,9 @@ export default function IndexScreen() {
   useEffect(() => {
     if (!isLoading && isLoaded && user) {
       switch (user.role) {
-        case "admin": router.replace("/(admin)/dashboard"); break;
+        case "admin":
+        case "sub_admin":
+          router.replace("/(admin)/dashboard"); break;
         case "driver": router.replace("/(driver)/dashboard"); break;
         case "customer": router.replace("/(customer)/dashboard"); break;
         case "distributor": router.replace("/(distributor)/dashboard"); break;
