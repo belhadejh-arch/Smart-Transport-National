@@ -1,6 +1,6 @@
 import { Router } from "express";
 import { db } from "@workspace/db";
-import { usersTable, cardsTable, transactionsTable, withdrawalRequestsTable } from "@workspace/db";
+import { usersTable, cardsTable, transactionsTable, withdrawalRequestsTable, driverPaymentsTable } from "@workspace/db";
 import { eq, and, gte, desc, sql } from "drizzle-orm";
 import { requireAuth, requireRole, AuthRequest } from "../middlewares/auth";
 
@@ -192,6 +192,33 @@ router.get("/withdrawals", async (req: AuthRequest, res) => {
       .where(eq(withdrawalRequestsTable.driverId, req.userId!))
       .orderBy(desc(withdrawalRequestsTable.createdAt));
     res.json({ requests: reqs.map(r => ({ ...r, amount: Number(r.amount) })), total: reqs.length });
+  } catch (err) {
+    req.log.error(err);
+    res.status(500).json({ error: "Server error" });
+  }
+});
+
+router.get("/payments", async (req: AuthRequest, res) => {
+  try {
+    const rows = await db
+      .select({
+        id: driverPaymentsTable.id,
+        driverId: driverPaymentsTable.driverId,
+        adminId: driverPaymentsTable.adminId,
+        amount: driverPaymentsTable.amount,
+        note: driverPaymentsTable.note,
+        receiptNumber: driverPaymentsTable.receiptNumber,
+        createdAt: driverPaymentsTable.createdAt,
+        adminName: sql<string>`a.name`,
+      })
+      .from(driverPaymentsTable)
+      .leftJoin(sql`users a`, sql`a.id = ${driverPaymentsTable.adminId}`)
+      .where(eq(driverPaymentsTable.driverId, req.userId!))
+      .orderBy(desc(driverPaymentsTable.createdAt));
+
+    const payments = rows.map(r => ({ ...r, amount: Number(r.amount) }));
+    const totalAmount = payments.reduce((s, p) => s + p.amount, 0);
+    res.json({ payments, total: payments.length, totalAmount });
   } catch (err) {
     req.log.error(err);
     res.status(500).json({ error: "Server error" });

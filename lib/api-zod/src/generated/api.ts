@@ -231,6 +231,45 @@ export const DeleteUserResponse = zod.object({
 });
 
 /**
+ * @summary Deduct amount from driver balance and create payment receipt
+ */
+export const CreateDriverPaymentParams = zod.object({
+  id: zod.coerce.number(),
+});
+
+export const CreateDriverPaymentBody = zod.object({
+  amount: zod.number(),
+  note: zod.string().optional(),
+});
+
+/**
+ * @summary List all driver payments (admin view)
+ */
+export const GetAdminDriverPaymentsQueryParams = zod.object({
+  driverId: zod.coerce.number().optional(),
+});
+
+export const GetAdminDriverPaymentsResponse = zod.object({
+  payments: zod.array(
+    zod.object({
+      id: zod.number(),
+      driverId: zod.number(),
+      adminId: zod.number(),
+      amount: zod.number(),
+      note: zod.string().optional(),
+      receiptNumber: zod.string(),
+      createdAt: zod.string(),
+      driverName: zod.string().optional(),
+      driverLastName: zod.string().optional(),
+      driverEmail: zod.string().optional(),
+      adminName: zod.string().optional(),
+    }),
+  ),
+  total: zod.number(),
+  totalAmount: zod.number(),
+});
+
+/**
  * @summary Get all cards
  */
 export const GetAdminCardsQueryParams = zod.object({
@@ -571,6 +610,29 @@ export const GetDriverWithdrawalsResponse = zod.object({
     }),
   ),
   total: zod.number(),
+});
+
+/**
+ * @summary Get driver payment (deduction) history with receipts
+ */
+export const GetDriverPaymentsResponse = zod.object({
+  payments: zod.array(
+    zod.object({
+      id: zod.number(),
+      driverId: zod.number(),
+      adminId: zod.number(),
+      amount: zod.number(),
+      note: zod.string().optional(),
+      receiptNumber: zod.string(),
+      createdAt: zod.string(),
+      driverName: zod.string().optional(),
+      driverLastName: zod.string().optional(),
+      driverEmail: zod.string().optional(),
+      adminName: zod.string().optional(),
+    }),
+  ),
+  total: zod.number(),
+  totalAmount: zod.number(),
 });
 
 /**

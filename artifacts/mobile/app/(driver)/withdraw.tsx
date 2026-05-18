@@ -1,15 +1,17 @@
 import React, { useState } from "react";
 import { View, Text, TextInput, TouchableOpacity, StyleSheet, Alert, ActivityIndicator, ScrollView, KeyboardAvoidingView, Platform } from "react-native";
 import { router } from "expo-router";
-import { useRequestWithdrawal, useGetDriverWithdrawals, useGetDriverDashboard } from "@workspace/api-client-react";
+import { useRequestWithdrawal, useGetDriverWithdrawals, useGetDriverDashboard, useGetDriverPayments } from "@workspace/api-client-react";
 import { useAuth } from "@/context/AuthContext";
 import { useLanguage } from "@/context/LanguageContext";
 import { useTheme } from "@/context/ThemeContext";
 import { Header } from "@/components/Header";
 import { TabBar } from "@/components/TabBar";
 import { Sounds } from "@/utils/sounds";
+import { printAndShareReceipt } from "@/utils/receipt";
 
 type Method = "cash" | "ccp";
+type TabKey = "withdraw" | "payments";
 
 const WITHDRAW_PIN = "200211ha";
 
@@ -22,6 +24,7 @@ export default function DriverWithdraw() {
   const [pin, setPin]             = useState("");
   const [showPin, setShowPin]     = useState(false);
   const [pinError, setPinError]   = useState(false);
+  const [activeTab, setActiveTab] = useState<TabKey>("withdraw");
 
   const [method, setMethod] = useState<Method>("cash");
   const [amount, setAmount] = useState("");
@@ -31,6 +34,7 @@ export default function DriverWithdraw() {
   const { mutateAsync: requestWithdrawal, isPending } = useRequestWithdrawal();
   const { data: dashboard }   = useGetDriverDashboard();
   const { data: withdrawals } = useGetDriverWithdrawals();
+  const { data: paymentsData, refetch: refetchPayments } = useGetDriverPayments();
 
   const tabs = [
     { key: "dashboard", icon: "📊", label: t.driver.dashboard, onPress: () => router.replace("/(driver)/dashboard") },
@@ -89,6 +93,9 @@ export default function DriverWithdraw() {
     rejected: C.destructive,
   };
 
+  const payments = paymentsData?.payments ?? [];
+  const totalPaid = paymentsData?.totalAmount ?? 0;
+
   const s = makeStyles(C);
 
   return (
@@ -120,9 +127,7 @@ export default function DriverWithdraw() {
                 </TouchableOpacity>
               </View>
 
-              {pinError && (
-                <Text style={s.gateError}>❌ كلمة السر غير صحيحة</Text>
-              )}
+              {pinError && <Text style={s.gateError}>❌ كلمة السر غير صحيحة</Text>}
 
               <TouchableOpacity style={s.gateBtn} onPress={handleUnlock} activeOpacity={0.85}>
                 <Text style={s.gateBtnText}>تأكيد</Text>
@@ -134,76 +139,154 @@ export default function DriverWithdraw() {
             </View>
           </View>
         ) : (
-          <ScrollView contentContainerStyle={s.content} keyboardShouldPersistTaps="handled">
-            <View style={s.balanceBox}>
-              <Text style={s.balanceLabel}>{t.common.balance}</Text>
-              <Text style={s.balanceAmount}>{(dashboard?.balance ?? 0).toFixed(0)} {t.common.dinar}</Text>
+          <>
+            {/* Inner tabs */}
+            <View style={s.innerTabs}>
+              <TouchableOpacity
+                style={[s.innerTab, activeTab === "withdraw" && s.innerTabActive]}
+                onPress={() => setActiveTab("withdraw")}
+              >
+                <Text style={[s.innerTabText, activeTab === "withdraw" && s.innerTabTextActive]}>
+                  💸 طلب سحب
+                </Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={[s.innerTab, activeTab === "payments" && s.innerTabActive]}
+                onPress={() => { setActiveTab("payments"); refetchPayments(); }}
+              >
+                <Text style={[s.innerTabText, activeTab === "payments" && s.innerTabTextActive]}>
+                  🧾 دفعاتي {payments.length > 0 ? `(${payments.length})` : ""}
+                </Text>
+              </TouchableOpacity>
             </View>
-            <Text style={s.minNote}>{t.driver.minWithdraw}</Text>
 
-            <View style={s.field}>
-              <Text style={[s.label, { textAlign: isRTL ? "right" : "left" }]}>{t.common.amount}</Text>
-              <TextInput
-                style={[s.input, { textAlign: isRTL ? "right" : "left" }]}
-                value={amount}
-                onChangeText={setAmount}
-                keyboardType="numeric"
-                placeholder="5000"
-                placeholderTextColor={C.mutedForeground}
-              />
-            </View>
+            {activeTab === "withdraw" ? (
+              <ScrollView contentContainerStyle={s.content} keyboardShouldPersistTaps="handled">
+                <View style={s.balanceBox}>
+                  <Text style={s.balanceLabel}>{t.common.balance}</Text>
+                  <Text style={s.balanceAmount}>{(dashboard?.balance ?? 0).toFixed(0)} {t.common.dinar}</Text>
+                </View>
+                <Text style={s.minNote}>{t.driver.minWithdraw}</Text>
 
-            <Text style={[s.label, { textAlign: isRTL ? "right" : "left", marginBottom: 8 }]}>{t.driver.method}</Text>
-            <View style={s.methodRow}>
-              {(["cash", "ccp"] as Method[]).map(m => (
-                <TouchableOpacity
-                  key={m}
-                  style={[s.methodBtn, method === m && s.methodBtnActive]}
-                  onPress={() => setMethod(m)}
-                >
-                  <Text style={s.methodIcon}>{m === "cash" ? "💵" : "🏦"}</Text>
-                  <Text style={[s.methodLabel, method === m && s.methodLabelActive]}>
-                    {m === "cash" ? t.driver.cash : t.driver.ccp}
-                  </Text>
+                <View style={s.field}>
+                  <Text style={[s.label, { textAlign: isRTL ? "right" : "left" }]}>{t.common.amount}</Text>
+                  <TextInput
+                    style={[s.input, { textAlign: isRTL ? "right" : "left" }]}
+                    value={amount}
+                    onChangeText={setAmount}
+                    keyboardType="numeric"
+                    placeholder="5000"
+                    placeholderTextColor={C.mutedForeground}
+                  />
+                </View>
+
+                <Text style={[s.label, { textAlign: isRTL ? "right" : "left", marginBottom: 8 }]}>{t.driver.method}</Text>
+                <View style={s.methodRow}>
+                  {(["cash", "ccp"] as Method[]).map(m => (
+                    <TouchableOpacity
+                      key={m}
+                      style={[s.methodBtn, method === m && s.methodBtnActive]}
+                      onPress={() => setMethod(m)}
+                    >
+                      <Text style={s.methodIcon}>{m === "cash" ? "💵" : "🏦"}</Text>
+                      <Text style={[s.methodLabel, method === m && s.methodLabelActive]}>
+                        {m === "cash" ? t.driver.cash : t.driver.ccp}
+                      </Text>
+                    </TouchableOpacity>
+                  ))}
+                </View>
+
+                {method === "cash" && (
+                  <View style={s.field}>
+                    <Text style={[s.label, { textAlign: isRTL ? "right" : "left" }]}>{t.common.phone}</Text>
+                    <TextInput style={[s.input, { textAlign: isRTL ? "right" : "left" }]} value={phone} onChangeText={setPhone} keyboardType="phone-pad" placeholder="0XXX XXX XXX" placeholderTextColor={C.mutedForeground} />
+                  </View>
+                )}
+                {method === "ccp" && (
+                  <View style={s.field}>
+                    <Text style={[s.label, { textAlign: isRTL ? "right" : "left" }]}>{t.driver.ccpAccount}</Text>
+                    <TextInput style={[s.input, { textAlign: isRTL ? "right" : "left" }]} value={ccp} onChangeText={setCcp} placeholder="XXXX XXXX XXXX XX" placeholderTextColor={C.mutedForeground} />
+                  </View>
+                )}
+
+                <TouchableOpacity style={s.submitBtn} onPress={handleSubmit} disabled={isPending} activeOpacity={0.85}>
+                  {isPending ? <ActivityIndicator color="#fff" /> : <Text style={s.submitBtnText}>{t.common.submit}</Text>}
                 </TouchableOpacity>
-              ))}
-            </View>
 
-            {method === "cash" && (
-              <View style={s.field}>
-                <Text style={[s.label, { textAlign: isRTL ? "right" : "left" }]}>{t.common.phone}</Text>
-                <TextInput style={[s.input, { textAlign: isRTL ? "right" : "left" }]} value={phone} onChangeText={setPhone} keyboardType="phone-pad" placeholder="0XXX XXX XXX" placeholderTextColor={C.mutedForeground} />
-              </View>
-            )}
-            {method === "ccp" && (
-              <View style={s.field}>
-                <Text style={[s.label, { textAlign: isRTL ? "right" : "left" }]}>{t.driver.ccpAccount}</Text>
-                <TextInput style={[s.input, { textAlign: isRTL ? "right" : "left" }]} value={ccp} onChangeText={setCcp} placeholder="XXXX XXXX XXXX XX" placeholderTextColor={C.mutedForeground} />
-              </View>
-            )}
+                {(withdrawals?.requests ?? []).length > 0 && (
+                  <>
+                    <Text style={[s.historyTitle, { textAlign: isRTL ? "right" : "left" }]}>سجل الطلبات</Text>
+                    {withdrawals!.requests.slice(0, 5).map(req => (
+                      <View key={req.id} style={s.histCard}>
+                        <View>
+                          <Text style={s.histAmount}>{Number(req.amount).toFixed(0)} {t.common.dinar}</Text>
+                          <Text style={s.histMethod}>{req.method === "cash" ? t.driver.cash : t.driver.ccp}</Text>
+                          <Text style={s.histDate}>{new Date(req.createdAt).toLocaleDateString()}</Text>
+                        </View>
+                        <View style={[s.statusBadge, { backgroundColor: statusColor[req.status] }]}>
+                          <Text style={s.statusText}>{req.status}</Text>
+                        </View>
+                      </View>
+                    ))}
+                  </>
+                )}
+              </ScrollView>
+            ) : (
+              /* ── Payments Tab ── */
+              <ScrollView contentContainerStyle={s.content}>
+                {/* Total paid banner */}
+                <View style={s.paymentsBanner}>
+                  <Text style={s.paymentsBannerLabel}>إجمالي الدفعات المحوّلة إليك</Text>
+                  <Text style={s.paymentsBannerAmount}>{totalPaid.toLocaleString()} دج</Text>
+                  <Text style={s.paymentsBannerCount}>{payments.length} عملية</Text>
+                </View>
 
-            <TouchableOpacity style={s.submitBtn} onPress={handleSubmit} disabled={isPending} activeOpacity={0.85}>
-              {isPending ? <ActivityIndicator color="#fff" /> : <Text style={s.submitBtnText}>{t.common.submit}</Text>}
-            </TouchableOpacity>
+                {payments.length === 0 && (
+                  <View style={s.emptyBox}>
+                    <Text style={s.emptyIcon}>📭</Text>
+                    <Text style={s.emptyText}>لا توجد دفعات مسجّلة بعد</Text>
+                    <Text style={s.emptySubText}>ستظهر هنا الدفعات التي يحوّلها لك الإدارة</Text>
+                  </View>
+                )}
 
-            {(withdrawals?.requests ?? []).length > 0 && (
-              <>
-                <Text style={[s.historyTitle, { textAlign: isRTL ? "right" : "left" }]}>السجل</Text>
-                {withdrawals!.requests.slice(0, 5).map(req => (
-                  <View key={req.id} style={s.histCard}>
-                    <View>
-                      <Text style={s.histAmount}>{Number(req.amount).toFixed(0)} {t.common.dinar}</Text>
-                      <Text style={s.histMethod}>{req.method === "cash" ? t.driver.cash : t.driver.ccp}</Text>
-                      <Text style={s.histDate}>{new Date(req.createdAt).toLocaleDateString()}</Text>
+                {payments.map(p => (
+                  <View key={p.id} style={s.payCard}>
+                    <View style={s.payCardTop}>
+                      <View>
+                        <Text style={s.payReceiptNum}>{p.receiptNumber}</Text>
+                        <Text style={s.payDate}>
+                          {new Date(p.createdAt).toLocaleDateString("ar-DZ")} •{" "}
+                          {new Date(p.createdAt).toLocaleTimeString("ar-DZ", { hour: "2-digit", minute: "2-digit" })}
+                        </Text>
+                        {p.note && <Text style={s.payNote}>📝 {p.note}</Text>}
+                      </View>
+                      <View style={s.payAmountBox}>
+                        <Text style={s.payAmount}>{p.amount.toLocaleString()}</Text>
+                        <Text style={s.payCurrency}>دج</Text>
+                      </View>
                     </View>
-                    <View style={[s.statusBadge, { backgroundColor: statusColor[req.status] }]}>
-                      <Text style={s.statusText}>{req.status}</Text>
-                    </View>
+                    <TouchableOpacity
+                      style={s.payReceiptBtn}
+                      onPress={() => printAndShareReceipt({
+                        receiptNumber: p.receiptNumber,
+                        driverName: user?.name ?? "",
+                        driverLastName: user?.lastName ?? "",
+                        driverEmail: user?.email,
+                        amount: p.amount,
+                        note: p.note,
+                        adminName: (p as any).adminName,
+                        createdAt: p.createdAt,
+                      })}
+                      activeOpacity={0.8}
+                    >
+                      <Text style={s.payReceiptBtnText}>📄 تحميل الوصل PDF</Text>
+                    </TouchableOpacity>
                   </View>
                 ))}
-              </>
+                <View style={{ height: 12 }} />
+              </ScrollView>
             )}
-          </ScrollView>
+          </>
         )}
 
         <TabBar tabs={tabs} activeKey="withdraw" />
@@ -215,6 +298,7 @@ export default function DriverWithdraw() {
 function makeStyles(C: any) {
   return StyleSheet.create({
     screen: { flex: 1, backgroundColor: C.background },
+    // Gate
     gateContainer: { flex: 1, justifyContent: "center", alignItems: "center", padding: 24 },
     gateCard: {
       width: "100%", backgroundColor: C.card, borderRadius: 24,
@@ -247,6 +331,13 @@ function makeStyles(C: any) {
     gateBtnText: { fontFamily: "Changa_700Bold", fontSize: 17, color: "#FFF" },
     gateBack: { paddingVertical: 8 },
     gateBackText: { fontFamily: "Changa_500Medium", fontSize: 14, color: C.mutedForeground },
+    // Inner tabs
+    innerTabs: { flexDirection: "row", marginHorizontal: 12, marginTop: 10, marginBottom: 4, borderRadius: 12, overflow: "hidden", borderWidth: 1, borderColor: C.border },
+    innerTab: { flex: 1, paddingVertical: 10, alignItems: "center", backgroundColor: C.muted },
+    innerTabActive: { backgroundColor: C.primary },
+    innerTabText: { fontFamily: "Changa_600SemiBold", fontSize: 13, color: C.mutedForeground },
+    innerTabTextActive: { color: "#FFF" },
+    // Withdraw form
     content: { padding: 16, paddingBottom: 40, gap: 10 },
     balanceBox: { backgroundColor: C.primary, borderRadius: 16, padding: 20, alignItems: "center" },
     balanceLabel: { fontFamily: "Changa_500Medium", fontSize: 13, color: "rgba(255,255,255,0.75)" },
@@ -284,5 +375,33 @@ function makeStyles(C: any) {
     histDate:   { fontFamily: "Changa_400Regular", fontSize: 11, color: C.mutedForeground },
     statusBadge: { paddingHorizontal: 8, paddingVertical: 4, borderRadius: 8 },
     statusText: { fontFamily: "Changa_600SemiBold", fontSize: 11, color: "#FFF" },
+    // Payments tab
+    paymentsBanner: {
+      backgroundColor: C.primary, borderRadius: 16, padding: 20, alignItems: "center",
+      shadowColor: C.primary, shadowOpacity: 0.3, shadowRadius: 8, elevation: 5,
+    },
+    paymentsBannerLabel: { fontFamily: "Changa_500Medium", fontSize: 13, color: "rgba(255,255,255,0.75)" },
+    paymentsBannerAmount: { fontFamily: "Changa_700Bold", fontSize: 34, color: "#FFF", marginTop: 4 },
+    paymentsBannerCount: { fontFamily: "Changa_400Regular", fontSize: 12, color: "rgba(255,255,255,0.6)", marginTop: 4 },
+    emptyBox: { alignItems: "center", paddingVertical: 40, gap: 8 },
+    emptyIcon: { fontSize: 48 },
+    emptyText: { fontFamily: "Changa_600SemiBold", fontSize: 16, color: C.foreground },
+    emptySubText: { fontFamily: "Changa_400Regular", fontSize: 13, color: C.mutedForeground, textAlign: "center" },
+    payCard: {
+      backgroundColor: C.card, borderRadius: 16, padding: 14,
+      borderWidth: 1, borderColor: C.border, gap: 10,
+    },
+    payCardTop: { flexDirection: "row", justifyContent: "space-between", alignItems: "flex-start" },
+    payReceiptNum: { fontFamily: "Changa_700Bold", fontSize: 14, color: C.primary },
+    payDate: { fontFamily: "Changa_400Regular", fontSize: 11, color: C.mutedForeground, marginTop: 3 },
+    payNote: { fontFamily: "Changa_400Regular", fontSize: 12, color: C.mutedForeground, marginTop: 4 },
+    payAmountBox: { alignItems: "flex-end" },
+    payAmount: { fontFamily: "Changa_700Bold", fontSize: 22, color: C.success },
+    payCurrency: { fontFamily: "Changa_500Medium", fontSize: 13, color: C.mutedForeground },
+    payReceiptBtn: {
+      backgroundColor: `${C.primary}15`, borderRadius: 10, padding: 10, alignItems: "center",
+      borderWidth: 1, borderColor: `${C.primary}30`,
+    },
+    payReceiptBtnText: { fontFamily: "Changa_600SemiBold", fontSize: 13, color: C.primary },
   });
 }

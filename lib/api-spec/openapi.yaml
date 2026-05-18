@@ -297,6 +297,53 @@ paths:
               schema:
                 $ref: "#/components/schemas/SuccessResponse"
 
+  /admin/drivers/{id}/payment:
+    post:
+      operationId: createDriverPayment
+      tags: [admin]
+      summary: Deduct amount from driver balance and create payment receipt
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateDriverPaymentRequest"
+      responses:
+        "201":
+          description: Payment created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/DriverPayment"
+
+  /admin/driver-payments:
+    get:
+      operationId: getAdminDriverPayments
+      tags: [admin]
+      summary: List all driver payments (admin view)
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: driverId
+          in: query
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: List of payments
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/DriverPaymentsListResponse"
+
   /admin/cards:
     get:
       operationId: getAdminCards
@@ -632,6 +679,21 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/WithdrawalRequestsListResponse"
+
+  /driver/payments:
+    get:
+      operationId: getDriverPayments
+      tags: [driver]
+      summary: Get driver payment (deduction) history with receipts
+      security:
+        - bearerAuth: []
+      responses:
+        "200":
+          description: Payment history
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/DriverPaymentsListResponse"
 
   # CUSTOMER
   /customer/cards:
@@ -1500,3 +1562,62 @@ components:
         - todayTopups
         - totalTopups
         - recentTransactions
+
+    CreateDriverPaymentRequest:
+      type: object
+      properties:
+        amount:
+          type: number
+        note:
+          type: string
+      required:
+        - amount
+
+    DriverPayment:
+      type: object
+      properties:
+        id:
+          type: integer
+        driverId:
+          type: integer
+        adminId:
+          type: integer
+        amount:
+          type: number
+        note:
+          type: string
+        receiptNumber:
+          type: string
+        createdAt:
+          type: string
+        driverName:
+          type: string
+        driverLastName:
+          type: string
+        driverEmail:
+          type: string
+        adminName:
+          type: string
+      required:
+        - id
+        - driverId
+        - adminId
+        - amount
+        - receiptNumber
+        - createdAt
+
+    DriverPaymentsListResponse:
+      type: object
+      properties:
+        payments:
+          type: array
+          items:
+            $ref: "#/components/schemas/DriverPayment"
+        total:
+          type: integer
+        totalAmount:
+          type: number
+      required:
+        - payments
+        - total
+        - totalAmount

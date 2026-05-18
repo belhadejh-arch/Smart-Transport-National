@@ -373,6 +373,31 @@ export interface DistributorDashboard {
   recentTransactions: Transaction[];
 }
 
+export interface CreateDriverPaymentRequest {
+  amount: number;
+  note?: string;
+}
+
+export interface DriverPayment {
+  id: number;
+  driverId: number;
+  adminId: number;
+  amount: number;
+  note?: string;
+  receiptNumber: string;
+  createdAt: string;
+  driverName?: string;
+  driverLastName?: string;
+  driverEmail?: string;
+  adminName?: string;
+}
+
+export interface DriverPaymentsListResponse {
+  payments: DriverPayment[];
+  total: number;
+  totalAmount: number;
+}
+
 export type GetAdminUsersParams = {
   role?: GetAdminUsersRole;
   page?: number;
@@ -386,6 +411,10 @@ export const GetAdminUsersRole = {
   customer: "customer",
   distributor: "distributor",
 } as const;
+
+export type GetAdminDriverPaymentsParams = {
+  driverId?: number;
+};
 
 export type GetAdminCardsParams = {
   status?: GetAdminCardsStatus;

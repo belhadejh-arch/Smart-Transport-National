@@ -52,6 +52,11 @@ export default function AdminWithdrawals() {
   return (
     <View style={s.screen}>
       <Header title={t.admin.withdrawals} />
+      <TouchableOpacity style={s.paymentsLink} onPress={() => router.push("/(admin)/driver-payments")} activeOpacity={0.85}>
+        <Text style={s.paymentsLinkText}>💸 دفعات السائقين (الخصومات والوصولات)</Text>
+        <Text style={s.paymentsLinkArrow}>←</Text>
+      </TouchableOpacity>
+
       <View style={s.filterRow}>
         {filters.map(f => (
           <TouchableOpacity key={f.key} style={[s.filterBtn, filter === f.key && s.filterBtnActive]} onPress={() => setFilter(f.key)}>
@@ -100,6 +105,14 @@ export default function AdminWithdrawals() {
 function makeStyles(C: any) {
   return StyleSheet.create({
     screen: { flex: 1, backgroundColor: C.background },
+    paymentsLink: {
+      marginHorizontal: 12, marginTop: 10, marginBottom: 2,
+      backgroundColor: `${C.accent}18`, borderRadius: 12, padding: 14,
+      flexDirection: "row", justifyContent: "space-between", alignItems: "center",
+      borderWidth: 1.5, borderColor: `${C.accent}40`,
+    },
+    paymentsLinkText: { fontFamily: "Changa_600SemiBold", fontSize: 14, color: C.accent },
+    paymentsLinkArrow: { fontFamily: "Changa_700Bold", fontSize: 16, color: C.accent },
     filterRow: { flexDirection: "row", paddingHorizontal: 12, paddingVertical: 8, gap: 6 },
     filterBtn: { paddingHorizontal: 12, paddingVertical: 6, borderRadius: 20, backgroundColor: C.muted },
     filterBtnActive: { backgroundColor: C.primary },

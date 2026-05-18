@@ -1,7 +1,7 @@
 import { Router } from "express";
 import bcrypt from "bcryptjs";
 import { db } from "@workspace/db";
-import { usersTable, cardsTable, transactionsTable, withdrawalRequestsTable } from "@workspace/db";
+import { usersTable, cardsTable, transactionsTable, withdrawalRequestsTable, driverPaymentsTable } from "@workspace/db";
 import { eq, and, sql, gte, desc } from "drizzle-orm";
 import { requireAuth, requireRole, AuthRequest } from "../middlewares/auth";
 
@@ -379,6 +379,97 @@ router.post("/distributors/:id/topup", async (req: AuthRequest, res) => {
     await db.execute(sql`UPDATE users SET balance = balance + ${amount} WHERE id = ${Number(req.params.id)} AND role = 'distributor'`);
     const [updated] = await db.select().from(usersTable).where(eq(usersTable.id, Number(req.params.id))).limit(1);
     res.json({ success: true, message: `Added ${amount} DZD to distributor`, newBalance: Number(updated.balance) });
+  } catch (err) {
+    req.log.error(err);
+    res.status(500).json({ error: "Server error" });
+  }
+});
+
+// ── Driver payments (deductions) ─────────────────────────────────────────────
+
+router.post("/drivers/:id/payment", async (req: AuthRequest, res) => {
+  try {
+    const driverId = Number(req.params.id);
+    const { amount, note } = req.body as { amount: number; note?: string };
+
+    if (!amount || amount <= 0) {
+      res.status(400).json({ error: "المبلغ يجب أن يكون أكبر من صفر" });
+      return;
+    }
+
+    const [driver] = await db.select().from(usersTable).where(eq(usersTable.id, driverId)).limit(1);
+    if (!driver || driver.role !== "driver") {
+      res.status(404).json({ error: "السائق غير موجود" });
+      return;
+    }
+    if (Number(driver.balance) < amount) {
+      res.status(400).json({ error: `رصيد السائق غير كافٍ (${Number(driver.balance).toFixed(0)} دج)` });
+      return;
+    }
+
+    // Generate receipt number: NQL-YEAR-PADDEDID
+    const [countRow] = await db.select({ cnt: sql<number>`count(*)` }).from(driverPaymentsTable);
+    const receiptSeq = (Number(countRow.cnt) + 1).toString().padStart(6, "0");
+    const receiptNumber = `NQL-${new Date().getFullYear()}-${receiptSeq}`;
+
+    const newBalance = Number(driver.balance) - amount;
+
+    const [payment] = await db.transaction(async (tx) => {
+      await tx.update(usersTable).set({ balance: String(newBalance) }).where(eq(usersTable.id, driverId));
+      return tx.insert(driverPaymentsTable).values({
+        driverId,
+        adminId: req.userId!,
+        amount: String(amount),
+        note: note ?? null,
+        receiptNumber,
+      }).returning();
+    });
+
+    const [admin] = await db.select().from(usersTable).where(eq(usersTable.id, req.userId!)).limit(1);
+
+    req.log.info({ adminId: req.userId, driverId, amount, receiptNumber }, "Driver payment created");
+    res.status(201).json({
+      ...payment,
+      amount: Number(payment.amount),
+      driverName: driver.name,
+      driverLastName: driver.lastName,
+      driverEmail: driver.email,
+      adminName: admin?.name ?? "",
+    });
+  } catch (err) {
+    req.log.error(err);
+    res.status(500).json({ error: "Server error" });
+  }
+});
+
+router.get("/driver-payments", async (req: AuthRequest, res) => {
+  try {
+    const { driverId } = req.query as { driverId?: string };
+
+    const rows = await db
+      .select({
+        id: driverPaymentsTable.id,
+        driverId: driverPaymentsTable.driverId,
+        adminId: driverPaymentsTable.adminId,
+        amount: driverPaymentsTable.amount,
+        note: driverPaymentsTable.note,
+        receiptNumber: driverPaymentsTable.receiptNumber,
+        createdAt: driverPaymentsTable.createdAt,
+        driverName: sql<string>`d.name`,
+        driverLastName: sql<string>`d.last_name`,
+        driverEmail: sql<string>`d.email`,
+        adminName: sql<string>`a.name`,
+      })
+      .from(driverPaymentsTable)
+      .leftJoin(sql`users d`, sql`d.id = ${driverPaymentsTable.driverId}`)
+      .leftJoin(sql`users a`, sql`a.id = ${driverPaymentsTable.adminId}`)
+      .where(driverId ? eq(driverPaymentsTable.driverId, Number(driverId)) : sql`1=1`)
+      .orderBy(desc(driverPaymentsTable.createdAt));
+
+    const payments = rows.map(r => ({ ...r, amount: Number(r.amount) }));
+    const totalAmount = payments.reduce((s, p) => s + p.amount, 0);
+
+    res.json({ payments, total: payments.length, totalAmount });
   } catch (err) {
     req.log.error(err);
     res.status(500).json({ error: "Server error" });

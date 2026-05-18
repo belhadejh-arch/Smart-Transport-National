@@ -23,6 +23,7 @@ import type {
   CardsListResponse,
   ChangePasswordRequest,
   CreateCardRequest,
+  CreateDriverPaymentRequest,
   CreateUserRequest,
   CustomerTopupRequest,
   CustomerTopupResponse,
@@ -32,9 +33,12 @@ import type {
   DriverDailyReport,
   DriverDashboard,
   DriverEarningsResponse,
+  DriverPayment,
+  DriverPaymentsListResponse,
   DriverTripsResponse,
   ErrorResponse,
   GetAdminCardsParams,
+  GetAdminDriverPaymentsParams,
   GetAdminTransactionsParams,
   GetAdminUsersParams,
   GetDriverDailyReportParams,
@@ -1146,6 +1150,197 @@ export const useDeleteUser = <
 > => {
   return useMutation(getDeleteUserMutationOptions(options));
 };
+
+/**
+ * @summary Deduct amount from driver balance and create payment receipt
+ */
+export const getCreateDriverPaymentUrl = (id: number) => {
+  return `/api/admin/drivers/${id}/payment`;
+};
+
+export const createDriverPayment = async (
+  id: number,
+  createDriverPaymentRequest: CreateDriverPaymentRequest,
+  options?: RequestInit,
+): Promise<DriverPayment> => {
+  return customFetch<DriverPayment>(getCreateDriverPaymentUrl(id), {
+    ...options,
+    method: "POST",
+    headers: { "Content-Type": "application/json", ...options?.headers },
+    body: JSON.stringify(createDriverPaymentRequest),
+  });
+};
+
+export const getCreateDriverPaymentMutationOptions = <
+  TError = ErrorType<unknown>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof createDriverPayment>>,
+    TError,
+    { id: number; data: BodyType<CreateDriverPaymentRequest> },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationOptions<
+  Awaited<ReturnType<typeof createDriverPayment>>,
+  TError,
+  { id: number; data: BodyType<CreateDriverPaymentRequest> },
+  TContext
+> => {
+  const mutationKey = ["createDriverPayment"];
+  const { mutation: mutationOptions, request: requestOptions } = options
+    ? options.mutation &&
+      "mutationKey" in options.mutation &&
+      options.mutation.mutationKey
+      ? options
+      : { ...options, mutation: { ...options.mutation, mutationKey } }
+    : { mutation: { mutationKey }, request: undefined };
+
+  const mutationFn: MutationFunction<
+    Awaited<ReturnType<typeof createDriverPayment>>,
+    { id: number; data: BodyType<CreateDriverPaymentRequest> }
+  > = (props) => {
+    const { id, data } = props ?? {};
+
+    return createDriverPayment(id, data, requestOptions);
+  };
+
+  return { mutationFn, ...mutationOptions };
+};
+
+export type CreateDriverPaymentMutationResult = NonNullable<
+  Awaited<ReturnType<typeof createDriverPayment>>
+>;
+export type CreateDriverPaymentMutationBody =
+  BodyType<CreateDriverPaymentRequest>;
+export type CreateDriverPaymentMutationError = ErrorType<unknown>;
+
+/**
+ * @summary Deduct amount from driver balance and create payment receipt
+ */
+export const useCreateDriverPayment = <
+  TError = ErrorType<unknown>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof createDriverPayment>>,
+    TError,
+    { id: number; data: BodyType<CreateDriverPaymentRequest> },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationResult<
+  Awaited<ReturnType<typeof createDriverPayment>>,
+  TError,
+  { id: number; data: BodyType<CreateDriverPaymentRequest> },
+  TContext
+> => {
+  return useMutation(getCreateDriverPaymentMutationOptions(options));
+};
+
+/**
+ * @summary List all driver payments (admin view)
+ */
+export const getGetAdminDriverPaymentsUrl = (
+  params?: GetAdminDriverPaymentsParams,
+) => {
+  const normalizedParams = new URLSearchParams();
+
+  Object.entries(params || {}).forEach(([key, value]) => {
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? "null" : value.toString());
+    }
+  });
+
+  const stringifiedParams = normalizedParams.toString();
+
+  return stringifiedParams.length > 0
+    ? `/api/admin/driver-payments?${stringifiedParams}`
+    : `/api/admin/driver-payments`;
+};
+
+export const getAdminDriverPayments = async (
+  params?: GetAdminDriverPaymentsParams,
+  options?: RequestInit,
+): Promise<DriverPaymentsListResponse> => {
+  return customFetch<DriverPaymentsListResponse>(
+    getGetAdminDriverPaymentsUrl(params),
+    {
+      ...options,
+      method: "GET",
+    },
+  );
+};
+
+export const getGetAdminDriverPaymentsQueryKey = (
+  params?: GetAdminDriverPaymentsParams,
+) => {
+  return [`/api/admin/driver-payments`, ...(params ? [params] : [])] as const;
+};
+
+export const getGetAdminDriverPaymentsQueryOptions = <
+  TData = Awaited<ReturnType<typeof getAdminDriverPayments>>,
+  TError = ErrorType<unknown>,
+>(
+  params?: GetAdminDriverPaymentsParams,
+  options?: {
+    query?: UseQueryOptions<
+      Awaited<ReturnType<typeof getAdminDriverPayments>>,
+      TError,
+      TData
+    >;
+    request?: SecondParameter<typeof customFetch>;
+  },
+) => {
+  const { query: queryOptions, request: requestOptions } = options ?? {};
+
+  const queryKey =
+    queryOptions?.queryKey ?? getGetAdminDriverPaymentsQueryKey(params);
+
+  const queryFn: QueryFunction<
+    Awaited<ReturnType<typeof getAdminDriverPayments>>
+  > = ({ signal }) =>
+    getAdminDriverPayments(params, { signal, ...requestOptions });
+
+  return { queryKey, queryFn, ...queryOptions } as UseQueryOptions<
+    Awaited<ReturnType<typeof getAdminDriverPayments>>,
+    TError,
+    TData
+  > & { queryKey: QueryKey };
+};
+
+export type GetAdminDriverPaymentsQueryResult = NonNullable<
+  Awaited<ReturnType<typeof getAdminDriverPayments>>
+>;
+export type GetAdminDriverPaymentsQueryError = ErrorType<unknown>;
+
+/**
+ * @summary List all driver payments (admin view)
+ */
+
+export function useGetAdminDriverPayments<
+  TData = Awaited<ReturnType<typeof getAdminDriverPayments>>,
+  TError = ErrorType<unknown>,
+>(
+  params?: GetAdminDriverPaymentsParams,
+  options?: {
+    query?: UseQueryOptions<
+      Awaited<ReturnType<typeof getAdminDriverPayments>>,
+      TError,
+      TData
+    >;
+    request?: SecondParameter<typeof customFetch>;
+  },
+): UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+  const queryOptions = getGetAdminDriverPaymentsQueryOptions(params, options);
+
+  const query = useQuery(queryOptions) as UseQueryResult<TData, TError> & {
+    queryKey: QueryKey;
+  };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
 
 /**
  * @summary Get all cards
@@ -2540,6 +2735,81 @@ export function useGetDriverWithdrawals<
   request?: SecondParameter<typeof customFetch>;
 }): UseQueryResult<TData, TError> & { queryKey: QueryKey } {
   const queryOptions = getGetDriverWithdrawalsQueryOptions(options);
+
+  const query = useQuery(queryOptions) as UseQueryResult<TData, TError> & {
+    queryKey: QueryKey;
+  };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+/**
+ * @summary Get driver payment (deduction) history with receipts
+ */
+export const getGetDriverPaymentsUrl = () => {
+  return `/api/driver/payments`;
+};
+
+export const getDriverPayments = async (
+  options?: RequestInit,
+): Promise<DriverPaymentsListResponse> => {
+  return customFetch<DriverPaymentsListResponse>(getGetDriverPaymentsUrl(), {
+    ...options,
+    method: "GET",
+  });
+};
+
+export const getGetDriverPaymentsQueryKey = () => {
+  return [`/api/driver/payments`] as const;
+};
+
+export const getGetDriverPaymentsQueryOptions = <
+  TData = Awaited<ReturnType<typeof getDriverPayments>>,
+  TError = ErrorType<unknown>,
+>(options?: {
+  query?: UseQueryOptions<
+    Awaited<ReturnType<typeof getDriverPayments>>,
+    TError,
+    TData
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}) => {
+  const { query: queryOptions, request: requestOptions } = options ?? {};
+
+  const queryKey = queryOptions?.queryKey ?? getGetDriverPaymentsQueryKey();
+
+  const queryFn: QueryFunction<
+    Awaited<ReturnType<typeof getDriverPayments>>
+  > = ({ signal }) => getDriverPayments({ signal, ...requestOptions });
+
+  return { queryKey, queryFn, ...queryOptions } as UseQueryOptions<
+    Awaited<ReturnType<typeof getDriverPayments>>,
+    TError,
+    TData
+  > & { queryKey: QueryKey };
+};
+
+export type GetDriverPaymentsQueryResult = NonNullable<
+  Awaited<ReturnType<typeof getDriverPayments>>
+>;
+export type GetDriverPaymentsQueryError = ErrorType<unknown>;
+
+/**
+ * @summary Get driver payment (deduction) history with receipts
+ */
+
+export function useGetDriverPayments<
+  TData = Awaited<ReturnType<typeof getDriverPayments>>,
+  TError = ErrorType<unknown>,
+>(options?: {
+  query?: UseQueryOptions<
+    Awaited<ReturnType<typeof getDriverPayments>>,
+    TError,
+    TData
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+  const queryOptions = getGetDriverPaymentsQueryOptions(options);
 
   const query = useQuery(queryOptions) as UseQueryResult<TData, TError> & {
     queryKey: QueryKey;
