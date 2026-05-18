@@ -12,7 +12,7 @@ export interface AuthUser {
   lastName: string;
   email: string;
   phone: string;
-  role: "admin" | "driver" | "customer" | "distributor";
+  role: "admin" | "sub_admin" | "driver" | "customer" | "distributor";
   profileImage: string | null;
   licenseNumber: string | null;
   balance: number;
@@ -63,7 +63,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         tokenRef.current = storedToken;
         setToken(storedToken);
         setUser(parsedUser);
-        // Refresh user data from API
         try {
           const resp = await fetch(`${API_BASE}/api/auth/me`, {
             headers: { Authorization: `Bearer ${storedToken}` },
@@ -73,11 +72,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
             setUser(freshUser);
             await AsyncStorage.setItem("nql_user", JSON.stringify(freshUser));
           } else {
-            // Token expired
             await clearAuth();
           }
         } catch {
-          // Keep stored user if API fails
+          // Keep stored user if API fails (offline)
         }
       }
     } catch {}
@@ -126,10 +124,19 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   function navigateToRole(role: string) {
     switch (role) {
-      case "admin": router.replace("/(admin)/dashboard"); break;
-      case "driver": router.replace("/(driver)/dashboard"); break;
-      case "customer": router.replace("/(customer)/dashboard"); break;
-      case "distributor": router.replace("/(distributor)/dashboard"); break;
+      case "admin":
+      case "sub_admin":
+        router.replace("/(admin)/dashboard");
+        break;
+      case "driver":
+        router.replace("/(driver)/dashboard");
+        break;
+      case "customer":
+        router.replace("/(customer)/dashboard");
+        break;
+      case "distributor":
+        router.replace("/(distributor)/dashboard");
+        break;
     }
   }
 

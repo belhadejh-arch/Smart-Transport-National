@@ -19,6 +19,39 @@ export interface SuccessResponse {
   message?: string;
 }
 
+export interface DriverEarningItem {
+  id: number;
+  name: string;
+  lastName: string;
+  email: string;
+  balance: number;
+  totalTrips: number;
+  totalEarnings: number;
+  totalFare: number;
+  totalFees: number;
+  totalWithdrawn: number;
+}
+
+export interface DriverEarningsResponse {
+  drivers: DriverEarningItem[];
+}
+
+export interface DistributorBalanceItem {
+  id: number;
+  name: string;
+  lastName: string;
+  email: string;
+  balance: number;
+  status: string;
+  totalTopups: number;
+  totalSent: number;
+  totalProfit: number;
+}
+
+export interface DistributorBalancesResponse {
+  distributors: DistributorBalanceItem[];
+}
+
 export interface LoginRequest {
   email: string;
   password: string;
@@ -87,6 +120,7 @@ export type CreateUserRequestRole =
 export const CreateUserRequestRole = {
   driver: "driver",
   distributor: "distributor",
+  sub_admin: "sub_admin",
 } as const;
 
 export interface CreateUserRequest {

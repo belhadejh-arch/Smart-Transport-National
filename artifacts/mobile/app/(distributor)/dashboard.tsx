@@ -1,26 +1,29 @@
-import React from "react";
+import React, { useState } from "react";
 import {
   View, Text, StyleSheet, TouchableOpacity, Alert,
   ActivityIndicator, ScrollView, RefreshControl,
 } from "react-native";
 import { router } from "expo-router";
-import { useGetDistributorDashboard } from "@workspace/api-client-react";
+import { useGetDistributorDashboard, useGetDistributorTransactions } from "@workspace/api-client-react";
 import { useAuth } from "@/context/AuthContext";
 import { useLanguage } from "@/context/LanguageContext";
 import { useTheme } from "@/context/ThemeContext";
 import { Header } from "@/components/Header";
 import { TabBar } from "@/components/TabBar";
+import { generateAndSharePDF } from "@/utils/pdfReport";
 
 export default function DistributorDashboard() {
   const { t, isRTL } = useLanguage();
   const { user, logout, switchAccount } = useAuth();
   const { C } = useTheme();
   const { data, isLoading, refetch } = useGetDistributorDashboard();
+  const { data: txData } = useGetDistributorTransactions();
+  const [pdfLoading, setPdfLoading] = useState(false);
 
   const tabs = [
     { key: "dashboard", icon: "📊", label: t.distributor.dashboard, onPress: () => {} },
-    { key: "scan", icon: "📷", label: t.distributor.scan, onPress: () => router.push("/(distributor)/scan") },
-    { key: "profile", icon: "👤", label: t.distributor.profile, onPress: () => router.push("/(distributor)/profile") },
+    { key: "scan",      icon: "📷", label: t.distributor.scan,      onPress: () => router.push("/(distributor)/scan") },
+    { key: "profile",   icon: "👤", label: t.distributor.profile,   onPress: () => router.push("/(distributor)/profile") },
   ];
 
   function confirmLogout() {
@@ -28,6 +31,38 @@ export default function DistributorDashboard() {
       { text: t.common.cancel, style: "cancel" },
       { text: t.common.confirm, onPress: logout, style: "destructive" },
     ]);
+  }
+
+  async function handlePDF() {
+    const txs = txData?.transactions ?? [];
+    if (!txs.length) { Alert.alert("", "لا توجد عمليات لتصديرها"); return; }
+    setPdfLoading(true);
+    try {
+      await generateAndSharePDF({
+        title: "كشف حساب الموزع",
+        subtitle: "سجل عمليات الشحن والأرباح",
+        userName: `${user?.name ?? ""} ${user?.lastName ?? ""}`,
+        generatedAt: new Date().toLocaleString("ar-DZ"),
+        summary: [
+          { label: "الرصيد المتاح للشحن",  value: `${(data?.balance ?? 0).toLocaleString()} دج` },
+          { label: "إجمالي عمليات الشحن",  value: `${data?.totalTopups ?? 0} عملية` },
+          { label: "إجمالي المُشحون",       value: `${txs.reduce((s, tx) => s + Number(tx.amount), 0).toFixed(0)} دج` },
+          { label: "إجمالي الأرباح",        value: `${(data?.totalEarnings ?? 0).toFixed(0)} دج` },
+          { label: "أرباح اليوم",           value: `${(data?.todayEarnings ?? 0).toFixed(0)} دج` },
+          { label: "شحن اليوم",             value: `${data?.todayTopups ?? 0} عملية` },
+        ],
+        rows: txs.map((tx: any) => ({
+          date: tx.createdAt ? new Date(tx.createdAt).toLocaleString("ar-DZ") : "",
+          description: `شحن بطاقة • ${tx.cardType ?? "-"}`,
+          amount: `${Number(tx.amount).toFixed(0)} دج (ربح: +${Number(tx.profit ?? tx.driverEarning ?? 0).toFixed(0)} دج)`,
+          type: "neutral" as const,
+        })),
+      });
+    } catch {
+      Alert.alert(t.common.error, "فشل إنشاء التقرير");
+    } finally {
+      setPdfLoading(false);
+    }
   }
 
   const s = makeStyles(C);
@@ -38,6 +73,12 @@ export default function DistributorDashboard() {
         title={t.distributor.dashboard}
         right={
           <View style={{ flexDirection: "row", gap: 6 }}>
+            <TouchableOpacity onPress={handlePDF} style={[s.hBtn, { paddingHorizontal: 8 }]} disabled={pdfLoading}>
+              {pdfLoading
+                ? <ActivityIndicator color="#FFF" size="small" />
+                : <Text style={[s.hBtnText, { fontSize: 11 }]}>📄</Text>
+              }
+            </TouchableOpacity>
             <TouchableOpacity onPress={switchAccount} style={s.hBtn}><Text style={s.hBtnText}>↔</Text></TouchableOpacity>
             <TouchableOpacity onPress={confirmLogout} style={s.hBtn}><Text style={s.hBtnText}>⏻</Text></TouchableOpacity>
           </View>

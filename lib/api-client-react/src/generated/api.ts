@@ -26,10 +26,12 @@ import type {
   CreateUserRequest,
   CustomerTopupRequest,
   CustomerTopupResponse,
+  DistributorBalancesResponse,
   DistributorDashboard,
   DistributorScanRequest,
   DriverDailyReport,
   DriverDashboard,
+  DriverEarningsResponse,
   DriverTripsResponse,
   ErrorResponse,
   GetAdminCardsParams,
@@ -1702,6 +1704,162 @@ export const useTopupDistributor = <
 > => {
   return useMutation(getTopupDistributorMutationOptions(options));
 };
+
+/**
+ * @summary Get all driver earnings summary (main admin only)
+ */
+export const getGetAdminDriverEarningsUrl = () => {
+  return `/api/admin/driver-earnings`;
+};
+
+export const getAdminDriverEarnings = async (
+  options?: RequestInit,
+): Promise<DriverEarningsResponse> => {
+  return customFetch<DriverEarningsResponse>(getGetAdminDriverEarningsUrl(), {
+    ...options,
+    method: "GET",
+  });
+};
+
+export const getGetAdminDriverEarningsQueryKey = () => {
+  return [`/api/admin/driver-earnings`] as const;
+};
+
+export const getGetAdminDriverEarningsQueryOptions = <
+  TData = Awaited<ReturnType<typeof getAdminDriverEarnings>>,
+  TError = ErrorType<unknown>,
+>(options?: {
+  query?: UseQueryOptions<
+    Awaited<ReturnType<typeof getAdminDriverEarnings>>,
+    TError,
+    TData
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}) => {
+  const { query: queryOptions, request: requestOptions } = options ?? {};
+
+  const queryKey =
+    queryOptions?.queryKey ?? getGetAdminDriverEarningsQueryKey();
+
+  const queryFn: QueryFunction<
+    Awaited<ReturnType<typeof getAdminDriverEarnings>>
+  > = ({ signal }) => getAdminDriverEarnings({ signal, ...requestOptions });
+
+  return { queryKey, queryFn, ...queryOptions } as UseQueryOptions<
+    Awaited<ReturnType<typeof getAdminDriverEarnings>>,
+    TError,
+    TData
+  > & { queryKey: QueryKey };
+};
+
+export type GetAdminDriverEarningsQueryResult = NonNullable<
+  Awaited<ReturnType<typeof getAdminDriverEarnings>>
+>;
+export type GetAdminDriverEarningsQueryError = ErrorType<unknown>;
+
+/**
+ * @summary Get all driver earnings summary (main admin only)
+ */
+
+export function useGetAdminDriverEarnings<
+  TData = Awaited<ReturnType<typeof getAdminDriverEarnings>>,
+  TError = ErrorType<unknown>,
+>(options?: {
+  query?: UseQueryOptions<
+    Awaited<ReturnType<typeof getAdminDriverEarnings>>,
+    TError,
+    TData
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+  const queryOptions = getGetAdminDriverEarningsQueryOptions(options);
+
+  const query = useQuery(queryOptions) as UseQueryResult<TData, TError> & {
+    queryKey: QueryKey;
+  };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+/**
+ * @summary Get all distributor balances (admin and sub-admin)
+ */
+export const getGetAdminDistributorBalancesUrl = () => {
+  return `/api/admin/distributor-balances`;
+};
+
+export const getAdminDistributorBalances = async (
+  options?: RequestInit,
+): Promise<DistributorBalancesResponse> => {
+  return customFetch<DistributorBalancesResponse>(
+    getGetAdminDistributorBalancesUrl(),
+    {
+      ...options,
+      method: "GET",
+    },
+  );
+};
+
+export const getGetAdminDistributorBalancesQueryKey = () => {
+  return [`/api/admin/distributor-balances`] as const;
+};
+
+export const getGetAdminDistributorBalancesQueryOptions = <
+  TData = Awaited<ReturnType<typeof getAdminDistributorBalances>>,
+  TError = ErrorType<unknown>,
+>(options?: {
+  query?: UseQueryOptions<
+    Awaited<ReturnType<typeof getAdminDistributorBalances>>,
+    TError,
+    TData
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}) => {
+  const { query: queryOptions, request: requestOptions } = options ?? {};
+
+  const queryKey =
+    queryOptions?.queryKey ?? getGetAdminDistributorBalancesQueryKey();
+
+  const queryFn: QueryFunction<
+    Awaited<ReturnType<typeof getAdminDistributorBalances>>
+  > = ({ signal }) =>
+    getAdminDistributorBalances({ signal, ...requestOptions });
+
+  return { queryKey, queryFn, ...queryOptions } as UseQueryOptions<
+    Awaited<ReturnType<typeof getAdminDistributorBalances>>,
+    TError,
+    TData
+  > & { queryKey: QueryKey };
+};
+
+export type GetAdminDistributorBalancesQueryResult = NonNullable<
+  Awaited<ReturnType<typeof getAdminDistributorBalances>>
+>;
+export type GetAdminDistributorBalancesQueryError = ErrorType<unknown>;
+
+/**
+ * @summary Get all distributor balances (admin and sub-admin)
+ */
+
+export function useGetAdminDistributorBalances<
+  TData = Awaited<ReturnType<typeof getAdminDistributorBalances>>,
+  TError = ErrorType<unknown>,
+>(options?: {
+  query?: UseQueryOptions<
+    Awaited<ReturnType<typeof getAdminDistributorBalances>>,
+    TError,
+    TData
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+  const queryOptions = getGetAdminDistributorBalancesQueryOptions(options);
+
+  const query = useQuery(queryOptions) as UseQueryResult<TData, TError> & {
+    queryKey: QueryKey;
+  };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
 
 /**
  * @summary Get driver dashboard data

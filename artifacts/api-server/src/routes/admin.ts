@@ -6,15 +6,22 @@ import { eq, and, sql, gte, desc } from "drizzle-orm";
 import { requireAuth, requireRole, AuthRequest } from "../middlewares/auth";
 
 const router = Router();
-router.use(requireAuth, requireRole("admin"));
+// Both admin and sub_admin can access this router; individual routes add extra guards
+router.use(requireAuth, requireRole("admin", "sub_admin"));
+
+const isMainAdmin = (req: AuthRequest) => req.userRole === "admin";
 
 function safeUser(u: typeof usersTable.$inferSelect) {
   const { passwordHash: _, ...rest } = u;
   return { ...rest, balance: Number(rest.balance) };
 }
 
-// Stats
+// ── Stats (main admin only) ──────────────────────────────────────────────────
 router.get("/stats", async (req: AuthRequest, res) => {
+  if (!isMainAdmin(req)) {
+    res.status(403).json({ error: "Forbidden for sub-admin" });
+    return;
+  }
   try {
     const today = new Date();
     today.setHours(0, 0, 0, 0);
@@ -48,7 +55,24 @@ router.get("/stats", async (req: AuthRequest, res) => {
   }
 });
 
-// Users
+// Sub-admin lightweight stats (counts only, no financials)
+router.get("/sub-stats", async (req: AuthRequest, res) => {
+  try {
+    const [totalDrivers] = await db.select({ count: sql<number>`count(*)` }).from(usersTable).where(eq(usersTable.role, "driver"));
+    const [totalDistributors] = await db.select({ count: sql<number>`count(*)` }).from(usersTable).where(eq(usersTable.role, "distributor"));
+    const [totalCustomers] = await db.select({ count: sql<number>`count(*)` }).from(usersTable).where(eq(usersTable.role, "customer"));
+    res.json({
+      totalDrivers: Number(totalDrivers.count),
+      totalDistributors: Number(totalDistributors.count),
+      totalCustomers: Number(totalCustomers.count),
+    });
+  } catch (err) {
+    req.log.error(err);
+    res.status(500).json({ error: "Server error" });
+  }
+});
+
+// ── Users ────────────────────────────────────────────────────────────────────
 router.get("/users", async (req: AuthRequest, res) => {
   try {
     const { role } = req.query as { role?: string };
@@ -68,6 +92,11 @@ router.post("/users", async (req: AuthRequest, res) => {
       name: string; lastName: string; email: string; phone: string;
       password: string; role: string; licenseNumber?: string; profileImage?: string;
     };
+    // Sub-admin can only create driver or distributor
+    if (!isMainAdmin(req) && !["driver", "distributor"].includes(role)) {
+      res.status(403).json({ error: "Sub-admin can only create driver or distributor accounts" });
+      return;
+    }
     const [existing] = await db.select().from(usersTable).where(eq(usersTable.email, email.toLowerCase())).limit(1);
     if (existing) { res.status(400).json({ error: "Email already exists" }); return; }
     const passwordHash = await bcrypt.hash(password, 10);
@@ -100,6 +129,11 @@ router.get("/users/:id", async (req: AuthRequest, res) => {
 router.put("/users/:id", async (req: AuthRequest, res) => {
   try {
     const { name, lastName, email, phone, status, licenseNumber } = req.body;
+    // Sub-admin cannot deactivate accounts
+    if (!isMainAdmin(req) && status) {
+      res.status(403).json({ error: "Sub-admin cannot change account status" });
+      return;
+    }
     const [user] = await db.update(usersTable).set({
       ...(name && { name }),
       ...(lastName && { lastName }),
@@ -116,7 +150,12 @@ router.put("/users/:id", async (req: AuthRequest, res) => {
   }
 });
 
+// Reset password — main admin only
 router.post("/users/:id/reset-password", async (req: AuthRequest, res) => {
+  if (!isMainAdmin(req)) {
+    res.status(403).json({ error: "Only main admin can reset passwords" });
+    return;
+  }
   try {
     const { newPassword } = req.body as { newPassword: string };
     const passwordHash = await bcrypt.hash(newPassword, 10);
@@ -128,8 +167,63 @@ router.post("/users/:id/reset-password", async (req: AuthRequest, res) => {
   }
 });
 
-// Cards
+// ── Driver earnings (main admin only) ────────────────────────────────────────
+router.get("/driver-earnings", async (req: AuthRequest, res) => {
+  if (!isMainAdmin(req)) {
+    res.status(403).json({ error: "Forbidden" });
+    return;
+  }
+  try {
+    const drivers = await db.select().from(usersTable).where(eq(usersTable.role, "driver")).orderBy(desc(usersTable.createdAt));
+    const result = await Promise.all(drivers.map(async (d) => {
+      const trips = await db.select().from(transactionsTable)
+        .where(and(eq(transactionsTable.driverId, d.id), eq(transactionsTable.type, "ride")));
+      const totalEarnings = trips.reduce((s, t) => s + Number(t.driverEarning), 0);
+      const totalFare = trips.reduce((s, t) => s + Number(t.amount), 0);
+      const totalFees = trips.reduce((s, t) => s + Number(t.platformFee), 0);
+      const withdrawals = await db.select().from(withdrawalRequestsTable)
+        .where(and(eq(withdrawalRequestsTable.driverId, d.id), eq(withdrawalRequestsTable.status, "approved")));
+      const totalWithdrawn = withdrawals.reduce((s, w) => s + Number(w.amount), 0);
+      return {
+        id: d.id, name: d.name, lastName: d.lastName, email: d.email,
+        balance: Number(d.balance), totalTrips: trips.length,
+        totalEarnings, totalFare, totalFees, totalWithdrawn,
+      };
+    }));
+    res.json({ drivers: result });
+  } catch (err) {
+    req.log.error(err);
+    res.status(500).json({ error: "Server error" });
+  }
+});
+
+// ── Distributor balances (both admin and sub_admin) ──────────────────────────
+router.get("/distributor-balances", async (req: AuthRequest, res) => {
+  try {
+    const distributors = await db.select().from(usersTable)
+      .where(eq(usersTable.role, "distributor")).orderBy(desc(usersTable.createdAt));
+    const result = await Promise.all(distributors.map(async (d) => {
+      const topups = await db.select().from(transactionsTable)
+        .where(and(eq(transactionsTable.distributorId, d.id), eq(transactionsTable.type, "topup")));
+      const totalTopups = topups.length;
+      const totalSent = topups.reduce((s, t) => s + Number(t.amount), 0);
+      const totalProfit = topups.reduce((s, t) => s + Number(t.driverEarning), 0);
+      return {
+        id: d.id, name: d.name, lastName: d.lastName, email: d.email,
+        balance: Number(d.balance), status: d.status,
+        totalTopups, totalSent, totalProfit,
+      };
+    }));
+    res.json({ distributors: result });
+  } catch (err) {
+    req.log.error(err);
+    res.status(500).json({ error: "Server error" });
+  }
+});
+
+// ── Cards (main admin only) ───────────────────────────────────────────────────
 router.get("/cards", async (req: AuthRequest, res) => {
+  if (!isMainAdmin(req)) { res.status(403).json({ error: "Forbidden" }); return; }
   try {
     const { status } = req.query as { status?: string };
     const cards = status
@@ -143,6 +237,7 @@ router.get("/cards", async (req: AuthRequest, res) => {
 });
 
 router.post("/cards/:id/approve", async (req: AuthRequest, res) => {
+  if (!isMainAdmin(req)) { res.status(403).json({ error: "Forbidden" }); return; }
   try {
     const [card] = await db.update(cardsTable).set({ status: "active" }).where(eq(cardsTable.id, Number(req.params.id))).returning();
     if (!card) { res.status(404).json({ error: "Not found" }); return; }
@@ -154,6 +249,7 @@ router.post("/cards/:id/approve", async (req: AuthRequest, res) => {
 });
 
 router.post("/cards/:id/reject", async (req: AuthRequest, res) => {
+  if (!isMainAdmin(req)) { res.status(403).json({ error: "Forbidden" }); return; }
   try {
     const [card] = await db.update(cardsTable).set({ status: "rejected" }).where(eq(cardsTable.id, Number(req.params.id))).returning();
     if (!card) { res.status(404).json({ error: "Not found" }); return; }
@@ -164,8 +260,9 @@ router.post("/cards/:id/reject", async (req: AuthRequest, res) => {
   }
 });
 
-// Transactions
+// ── Transactions (main admin only) ───────────────────────────────────────────
 router.get("/transactions", async (req: AuthRequest, res) => {
+  if (!isMainAdmin(req)) { res.status(403).json({ error: "Forbidden" }); return; }
   try {
     const { type } = req.query as { type?: string };
     const txs = type
@@ -181,8 +278,9 @@ router.get("/transactions", async (req: AuthRequest, res) => {
   }
 });
 
-// Withdrawal requests
+// ── Withdrawal requests (main admin only) ────────────────────────────────────
 router.get("/withdrawal-requests", async (req: AuthRequest, res) => {
+  if (!isMainAdmin(req)) { res.status(403).json({ error: "Forbidden" }); return; }
   try {
     const { status } = req.query as { status?: string };
     const reqs = status
@@ -196,11 +294,11 @@ router.get("/withdrawal-requests", async (req: AuthRequest, res) => {
 });
 
 router.post("/withdrawal-requests/:id/approve", async (req: AuthRequest, res) => {
+  if (!isMainAdmin(req)) { res.status(403).json({ error: "Forbidden" }); return; }
   try {
     const [wr] = await db.select().from(withdrawalRequestsTable).where(eq(withdrawalRequestsTable.id, Number(req.params.id))).limit(1);
     if (!wr) { res.status(404).json({ error: "Not found" }); return; }
     if (wr.status !== "pending") { res.status(400).json({ error: "Already processed" }); return; }
-    // Deduct from driver balance
     await db.execute(sql`UPDATE users SET balance = balance - ${wr.amount} WHERE id = ${wr.driverId}`);
     const [updated] = await db.update(withdrawalRequestsTable).set({ status: "approved" }).where(eq(withdrawalRequestsTable.id, wr.id)).returning();
     res.json({ ...updated, amount: Number(updated.amount) });
@@ -211,6 +309,7 @@ router.post("/withdrawal-requests/:id/approve", async (req: AuthRequest, res) =>
 });
 
 router.post("/withdrawal-requests/:id/reject", async (req: AuthRequest, res) => {
+  if (!isMainAdmin(req)) { res.status(403).json({ error: "Forbidden" }); return; }
   try {
     const [updated] = await db.update(withdrawalRequestsTable).set({ status: "rejected" }).where(eq(withdrawalRequestsTable.id, Number(req.params.id))).returning();
     if (!updated) { res.status(404).json({ error: "Not found" }); return; }
@@ -221,13 +320,17 @@ router.post("/withdrawal-requests/:id/reject", async (req: AuthRequest, res) => 
   }
 });
 
-// Distributor topup
+// ── Distributor topup (both admin and sub_admin) ─────────────────────────────
 router.post("/distributors/:id/topup", async (req: AuthRequest, res) => {
   try {
     const { amount } = req.body as { amount: number };
     if (!amount || amount <= 0) { res.status(400).json({ error: "Invalid amount" }); return; }
+    const [dist] = await db.select().from(usersTable)
+      .where(and(eq(usersTable.id, Number(req.params.id)), eq(usersTable.role, "distributor"))).limit(1);
+    if (!dist) { res.status(404).json({ error: "Distributor not found" }); return; }
     await db.execute(sql`UPDATE users SET balance = balance + ${amount} WHERE id = ${Number(req.params.id)} AND role = 'distributor'`);
-    res.json({ success: true, message: `Added ${amount} DZD to distributor` });
+    const [updated] = await db.select().from(usersTable).where(eq(usersTable.id, Number(req.params.id))).limit(1);
+    res.json({ success: true, message: `Added ${amount} DZD to distributor`, newBalance: Number(updated.balance) });
   } catch (err) {
     req.log.error(err);
     res.status(500).json({ error: "Server error" });

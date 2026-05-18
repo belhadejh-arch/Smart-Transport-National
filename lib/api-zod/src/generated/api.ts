@@ -134,7 +134,7 @@ export const CreateUserBody = zod.object({
   email: zod.string().email(),
   phone: zod.string(),
   password: zod.string(),
-  role: zod.enum(["driver", "distributor"]),
+  role: zod.enum(["driver", "distributor", "sub_admin"]),
   licenseNumber: zod.string().optional(),
   profileImage: zod.string().nullish(),
 });
@@ -375,6 +375,45 @@ export const TopupDistributorBody = zod.object({
 export const TopupDistributorResponse = zod.object({
   success: zod.boolean(),
   message: zod.string().optional(),
+});
+
+/**
+ * @summary Get all driver earnings summary (main admin only)
+ */
+export const GetAdminDriverEarningsResponse = zod.object({
+  drivers: zod.array(
+    zod.object({
+      id: zod.number(),
+      name: zod.string(),
+      lastName: zod.string(),
+      email: zod.string(),
+      balance: zod.number(),
+      totalTrips: zod.number(),
+      totalEarnings: zod.number(),
+      totalFare: zod.number(),
+      totalFees: zod.number(),
+      totalWithdrawn: zod.number(),
+    }),
+  ),
+});
+
+/**
+ * @summary Get all distributor balances (admin and sub-admin)
+ */
+export const GetAdminDistributorBalancesResponse = zod.object({
+  distributors: zod.array(
+    zod.object({
+      id: zod.number(),
+      name: zod.string(),
+      lastName: zod.string(),
+      email: zod.string(),
+      balance: zod.number(),
+      status: zod.string(),
+      totalTopups: zod.number(),
+      totalSent: zod.number(),
+      totalProfit: zod.number(),
+    }),
+  ),
 });
 
 /**

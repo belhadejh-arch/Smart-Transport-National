@@ -61,6 +61,8 @@
     "expo-camera": "^17.0.10",
     "expo-clipboard": "^8.0.8",
     "expo-document-picker": "^14.0.8",
+    "expo-print": "~15.0.8",
+    "expo-sharing": "~14.0.8",
     "react-native-qrcode-svg": "^6.3.21",
     "react-native-toast-message": "^2.3.3"
   }
