@@ -10,6 +10,8 @@ import colors from "@/constants/colors";
 
 type RoleFilter = "all" | "driver" | "customer" | "distributor";
 
+const FIXED_TOPUP = 10000;
+
 export default function AdminUsers() {
   const { t, isRTL } = useLanguage();
   const C = colors.light;
@@ -18,6 +20,10 @@ export default function AdminUsers() {
   const [modalUser, setModalUser] = useState<any>(null);
   const [newPassword, setNewPassword] = useState("");
   const [topupAmount, setTopupAmount] = useState("");
+
+  // Quick topup by ID
+  const [quickId, setQuickId] = useState("");
+  const [quickLoading, setQuickLoading] = useState(false);
 
   const { data, isLoading, refetch } = useGetAdminUsers({ role: roleFilter === "all" ? undefined : roleFilter });
   const { mutateAsync: resetPwd } = useResetUserPassword();
@@ -65,6 +71,37 @@ export default function AdminUsers() {
     } catch { Alert.alert(t.common.error, t.common.error); }
   }
 
+  async function handleQuickTopup() {
+    const id = Number(quickId.trim());
+    if (!id || id <= 0) {
+      Alert.alert(t.common.error, "أدخل رقم ID صحيح للموزع");
+      return;
+    }
+    Alert.alert(
+      "تأكيد الشحن",
+      `إضافة ${FIXED_TOPUP.toLocaleString()} دج لحساب الموزع رقم #${id}`,
+      [
+        { text: t.common.cancel, style: "cancel" },
+        {
+          text: "شحن",
+          onPress: async () => {
+            setQuickLoading(true);
+            try {
+              await topup({ id, data: { amount: FIXED_TOPUP } });
+              Alert.alert("✅ تم الشحن", `تمت إضافة ${FIXED_TOPUP.toLocaleString()} دج للموزع #${id}`);
+              setQuickId("");
+              refetch();
+            } catch {
+              Alert.alert(t.common.error, "فشل الشحن — تحقق من رقم ID");
+            } finally {
+              setQuickLoading(false);
+            }
+          },
+        },
+      ]
+    );
+  }
+
   async function handleToggleStatus() {
     const newStatus = modalUser.status === "active" ? "inactive" : "active";
     try {
@@ -100,6 +137,37 @@ export default function AdminUsers() {
           placeholderTextColor={C.mutedForeground}
         />
       </View>
+      {/* Quick topup by distributor ID */}
+      <View style={styles.quickTopupBox}>
+        <Text style={styles.quickTopupTitle}>💳 شحن حساب موزع</Text>
+        <Text style={styles.quickTopupSub}>
+          المبلغ الثابت: <Text style={{ color: C.accent, fontFamily: "Changa_700Bold" }}>{FIXED_TOPUP.toLocaleString()} دج</Text>
+        </Text>
+        <View style={styles.quickTopupRow}>
+          <TextInput
+            style={styles.quickTopupInput}
+            value={quickId}
+            onChangeText={setQuickId}
+            placeholder="رقم ID الموزع"
+            placeholderTextColor={C.mutedForeground}
+            keyboardType="numeric"
+            returnKeyType="done"
+            onSubmitEditing={handleQuickTopup}
+          />
+          <TouchableOpacity
+            style={[styles.quickTopupBtn, quickLoading && { opacity: 0.6 }]}
+            onPress={handleQuickTopup}
+            disabled={quickLoading}
+            activeOpacity={0.85}
+          >
+            {quickLoading
+              ? <ActivityIndicator color="#FFF" size="small" />
+              : <Text style={styles.quickTopupBtnText}>شحن</Text>
+            }
+          </TouchableOpacity>
+        </View>
+      </View>
+
       <TouchableOpacity style={styles.addBtn} onPress={() => router.push("/(admin)/create-user")} activeOpacity={0.85}>
         <Text style={styles.addBtnText}>+ {t.admin.createUser}</Text>
       </TouchableOpacity>
@@ -206,6 +274,26 @@ const styles = StyleSheet.create({
     fontFamily: "Changa_400Regular", fontSize: 14, color: C.foreground,
     borderWidth: 1, borderColor: C.border,
   },
+  quickTopupBox: {
+    marginHorizontal: 12, marginBottom: 8, backgroundColor: C.card,
+    borderRadius: 14, padding: 14, borderWidth: 1.5, borderColor: `${C.accent}50`,
+    gap: 6,
+  },
+  quickTopupTitle: { fontFamily: "Changa_700Bold", fontSize: 15, color: C.foreground },
+  quickTopupSub: { fontFamily: "Changa_400Regular", fontSize: 12, color: C.mutedForeground },
+  quickTopupRow: { flexDirection: "row", gap: 8, marginTop: 2 },
+  quickTopupInput: {
+    flex: 1, backgroundColor: C.input, borderRadius: 10, padding: 10,
+    fontFamily: "Changa_400Regular", fontSize: 15, color: C.foreground,
+    borderWidth: 1.5, borderColor: C.border, textAlign: "center",
+  },
+  quickTopupBtn: {
+    backgroundColor: C.accent, borderRadius: 10, paddingHorizontal: 20,
+    justifyContent: "center", alignItems: "center",
+    shadowColor: C.accent, shadowOffset: { width: 0, height: 3 },
+    shadowOpacity: 0.3, shadowRadius: 6, elevation: 4,
+  },
+  quickTopupBtnText: { fontFamily: "Changa_700Bold", fontSize: 15, color: "#FFF" },
   addBtn: {
     marginHorizontal: 12, marginBottom: 8,
     backgroundColor: C.primary, borderRadius: 10, padding: 10, alignItems: "center",

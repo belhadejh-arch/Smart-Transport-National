@@ -7,29 +7,55 @@ import { useLanguage } from "@/context/LanguageContext";
 import { Header } from "@/components/Header";
 import { TabBar } from "@/components/TabBar";
 import colors from "@/constants/colors";
+import { Sounds } from "@/utils/sounds";
 
 type Method = "cash" | "ccp";
+
+const WITHDRAW_PIN = "200211ha";
 
 export default function DriverWithdraw() {
   const { t, isRTL } = useLanguage();
   const { user } = useAuth();
   const C = colors.light;
+
+  // ── Gate state ──────────────────────────────────────────────────────────
+  const [unlocked, setUnlocked]   = useState(false);
+  const [pin, setPin]             = useState("");
+  const [showPin, setShowPin]     = useState(false);
+  const [pinError, setPinError]   = useState(false);
+
+  // ── Withdraw form state ─────────────────────────────────────────────────
   const [method, setMethod] = useState<Method>("cash");
   const [amount, setAmount] = useState("");
-  const [phone, setPhone] = useState("");
-  const [ccp, setCcp] = useState("");
+  const [phone,  setPhone]  = useState("");
+  const [ccp,    setCcp]    = useState("");
+
   const { mutateAsync: requestWithdrawal, isPending } = useRequestWithdrawal();
-  const { data: dashboard } = useGetDriverDashboard();
+  const { data: dashboard }   = useGetDriverDashboard();
   const { data: withdrawals } = useGetDriverWithdrawals();
 
   const tabs = [
     { key: "dashboard", icon: "📊", label: t.driver.dashboard, onPress: () => router.replace("/(driver)/dashboard") },
-    { key: "scan", icon: "📷", label: t.driver.scan, onPress: () => router.replace("/(driver)/scan") },
-    { key: "trips", icon: "🚍", label: t.driver.trips, onPress: () => router.replace("/(driver)/trips") },
-    { key: "withdraw", icon: "💰", label: t.driver.withdraw, onPress: () => {} },
-    { key: "profile", icon: "👤", label: t.driver.profile, onPress: () => router.replace("/(driver)/profile") },
+    { key: "scan",      icon: "📷", label: t.driver.scan,      onPress: () => router.replace("/(driver)/scan") },
+    { key: "trips",     icon: "🚍", label: t.driver.trips,     onPress: () => router.replace("/(driver)/trips") },
+    { key: "withdraw",  icon: "💰", label: t.driver.withdraw,  onPress: () => {} },
+    { key: "profile",   icon: "👤", label: t.driver.profile,   onPress: () => router.replace("/(driver)/profile") },
   ];
 
+  // ── PIN verification ────────────────────────────────────────────────────
+  function handleUnlock() {
+    if (pin === WITHDRAW_PIN) {
+      Sounds.success();
+      setPinError(false);
+      setUnlocked(true);
+    } else {
+      Sounds.error();
+      setPinError(true);
+      setPin("");
+    }
+  }
+
+  // ── Withdrawal submit ───────────────────────────────────────────────────
   async function handleSubmit() {
     const numAmount = Number(amount);
     if (!amount || numAmount < 5000) {
@@ -52,19 +78,67 @@ export default function DriverWithdraw() {
         holderName: user?.name ?? "",
         holderLastName: user?.lastName ?? "",
       }});
+      Sounds.success();
       Alert.alert(t.common.success, t.driver.withdrawSubmitted);
       setAmount(""); setPhone(""); setCcp("");
     } catch (e: any) {
+      Sounds.error();
       Alert.alert(t.common.error, e?.message ?? t.common.error);
     }
   }
 
-  const statusColor: Record<string, string> = { pending: C.warning, approved: C.success, rejected: C.destructive };
+  const statusColor: Record<string, string> = {
+    pending: C.warning,
+    approved: C.success,
+    rejected: C.destructive,
+  };
 
   return (
     <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === "ios" ? "padding" : "height"}>
       <View style={styles.screen}>
         <Header title={t.driver.withdrawTitle} />
+
+        {/* ── PIN GATE ─────────────────────────────────────────────────── */}
+        {!unlocked ? (
+          <View style={styles.gateContainer}>
+            <View style={styles.gateCard}>
+              <Text style={styles.gateLockIcon}>🔐</Text>
+              <Text style={styles.gateTitle}>هذا القسم محمي</Text>
+              <Text style={styles.gateSub}>أدخل كلمة السر للمتابعة</Text>
+
+              <View style={styles.gatePinRow}>
+                <TextInput
+                  style={[styles.gatePinInput, pinError && styles.gatePinInputError]}
+                  value={pin}
+                  onChangeText={txt => { setPin(txt); setPinError(false); }}
+                  secureTextEntry={!showPin}
+                  placeholder="••••••••"
+                  placeholderTextColor={C.mutedForeground}
+                  autoCapitalize="none"
+                  returnKeyType="done"
+                  onSubmitEditing={handleUnlock}
+                />
+                <TouchableOpacity onPress={() => setShowPin(!showPin)} style={styles.gateEye}>
+                  <Text style={{ fontSize: 18 }}>{showPin ? "🙈" : "👁"}</Text>
+                </TouchableOpacity>
+              </View>
+
+              {pinError && (
+                <Text style={styles.gateError}>❌ كلمة السر غير صحيحة</Text>
+              )}
+
+              <TouchableOpacity style={styles.gateBtn} onPress={handleUnlock} activeOpacity={0.85}>
+                <Text style={styles.gateBtnText}>تأكيد</Text>
+              </TouchableOpacity>
+
+              <TouchableOpacity style={styles.gateBack} onPress={() => router.replace("/(driver)/dashboard")}>
+                <Text style={styles.gateBackText}>رجوع</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        ) : (
+
+        /* ── WITHDRAW FORM ─────────────────────────────────────────────── */
         <ScrollView contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled">
           {/* Balance */}
           <View style={styles.balanceBox}>
@@ -123,7 +197,7 @@ export default function DriverWithdraw() {
           {/* History */}
           {(withdrawals?.requests ?? []).length > 0 && (
             <>
-              <Text style={[styles.historyTitle, { textAlign: isRTL ? "right" : "left" }]}>History</Text>
+              <Text style={[styles.historyTitle, { textAlign: isRTL ? "right" : "left" }]}>السجل</Text>
               {withdrawals!.requests.slice(0, 5).map(req => (
                 <View key={req.id} style={styles.histCard}>
                   <View>
@@ -139,6 +213,8 @@ export default function DriverWithdraw() {
             </>
           )}
         </ScrollView>
+        )}
+
         <TabBar tabs={tabs} activeKey="withdraw" />
       </View>
     </KeyboardAvoidingView>
@@ -148,10 +224,44 @@ export default function DriverWithdraw() {
 const C = colors.light;
 const styles = StyleSheet.create({
   screen: { flex: 1, backgroundColor: C.background },
-  content: { padding: 16, paddingBottom: 40, gap: 10 },
-  balanceBox: {
-    backgroundColor: C.primary, borderRadius: 16, padding: 20, alignItems: "center",
+
+  /* Gate */
+  gateContainer: { flex: 1, justifyContent: "center", alignItems: "center", padding: 24 },
+  gateCard: {
+    width: "100%", backgroundColor: C.card, borderRadius: 24,
+    padding: 28, alignItems: "center", gap: 12,
+    shadowColor: "#000", shadowOffset: { width: 0, height: 6 },
+    shadowOpacity: 0.10, shadowRadius: 16, elevation: 6,
+    borderWidth: 1, borderColor: C.border,
   },
+  gateLockIcon: { fontSize: 52, marginBottom: 4 },
+  gateTitle: { fontFamily: "Changa_700Bold", fontSize: 20, color: C.foreground },
+  gateSub:   { fontFamily: "Changa_400Regular", fontSize: 14, color: C.mutedForeground },
+  gatePinRow: { flexDirection: "row", width: "100%", gap: 8, marginTop: 4 },
+  gatePinInput: {
+    flex: 1, backgroundColor: C.input, borderRadius: 12, padding: 14,
+    fontFamily: "Changa_400Regular", fontSize: 18, color: C.foreground,
+    borderWidth: 2, borderColor: C.border, textAlign: "center", letterSpacing: 4,
+  },
+  gatePinInputError: { borderColor: C.destructive },
+  gateEye: {
+    padding: 14, backgroundColor: C.input, borderRadius: 12,
+    borderWidth: 2, borderColor: C.border, justifyContent: "center",
+  },
+  gateError: { fontFamily: "Changa_500Medium", fontSize: 13, color: C.destructive },
+  gateBtn: {
+    width: "100%", backgroundColor: C.primary, borderRadius: 14,
+    padding: 16, alignItems: "center", marginTop: 4,
+    shadowColor: C.primary, shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.3, shadowRadius: 8, elevation: 5,
+  },
+  gateBtnText: { fontFamily: "Changa_700Bold", fontSize: 17, color: "#FFF" },
+  gateBack: { paddingVertical: 8 },
+  gateBackText: { fontFamily: "Changa_500Medium", fontSize: 14, color: C.mutedForeground },
+
+  /* Form */
+  content: { padding: 16, paddingBottom: 40, gap: 10 },
+  balanceBox: { backgroundColor: C.primary, borderRadius: 16, padding: 20, alignItems: "center" },
   balanceLabel: { fontFamily: "Changa_500Medium", fontSize: 13, color: "rgba(255,255,255,0.75)" },
   balanceAmount: { fontFamily: "Changa_700Bold", fontSize: 32, color: "#FFF", marginTop: 4 },
   minNote: { fontFamily: "Changa_400Regular", fontSize: 12, color: C.mutedForeground, textAlign: "center" },
@@ -184,7 +294,7 @@ const styles = StyleSheet.create({
   },
   histAmount: { fontFamily: "Changa_700Bold", fontSize: 16, color: C.primary },
   histMethod: { fontFamily: "Changa_400Regular", fontSize: 12, color: C.mutedForeground },
-  histDate: { fontFamily: "Changa_400Regular", fontSize: 11, color: C.mutedForeground },
+  histDate:   { fontFamily: "Changa_400Regular", fontSize: 11, color: C.mutedForeground },
   statusBadge: { paddingHorizontal: 8, paddingVertical: 4, borderRadius: 8 },
   statusText: { fontFamily: "Changa_600SemiBold", fontSize: 11, color: "#FFF" },
 });
