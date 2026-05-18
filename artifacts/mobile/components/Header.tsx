@@ -3,7 +3,7 @@ import { View, Text, TouchableOpacity, StyleSheet, Platform } from "react-native
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useAuth } from "@/context/AuthContext";
 import { useLanguage } from "@/context/LanguageContext";
-import colors from "@/constants/colors";
+import { useTheme } from "@/context/ThemeContext";
 
 interface HeaderProps {
   title: string;
@@ -13,9 +13,10 @@ interface HeaderProps {
 
 export function Header({ title, showLogout = false, right }: HeaderProps) {
   const insets = useSafeAreaInsets();
-  const { logout, switchAccount } = useAuth();
+  const { logout } = useAuth();
   const { t } = useLanguage();
-  const C = colors.light;
+  const { C } = useTheme();
+  const styles = makeStyles(C);
 
   return (
     <View style={[styles.container, { paddingTop: insets.top + (Platform.OS === "web" ? 67 : 8) }]}>
@@ -35,47 +36,48 @@ export function Header({ title, showLogout = false, right }: HeaderProps) {
   );
 }
 
-const C = colors.light;
-const styles = StyleSheet.create({
-  container: {
-    backgroundColor: C.primary,
-    paddingBottom: 12,
-    paddingHorizontal: 16,
-  },
-  inner: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "space-between",
-    minHeight: 44,
-  },
-  logo: {
-    fontFamily: "Changa_700Bold",
-    fontSize: 14,
-    color: C.accent,
-    letterSpacing: 1,
-    minWidth: 56,
-  },
-  title: {
-    fontFamily: "Changa_700Bold",
-    fontSize: 18,
-    color: "#FFFFFF",
-    flex: 1,
-    textAlign: "center",
-  },
-  right: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 8,
-    minWidth: 56,
-    justifyContent: "flex-end",
-  },
-  logoutBtn: {
-    width: 36,
-    height: 36,
-    borderRadius: 18,
-    backgroundColor: "rgba(255,255,255,0.15)",
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  logoutText: { fontSize: 18, color: "#FFF" },
-});
+function makeStyles(C: any) {
+  return StyleSheet.create({
+    container: {
+      backgroundColor: C.primary,
+      paddingBottom: 12,
+      paddingHorizontal: 16,
+    },
+    inner: {
+      flexDirection: "row",
+      alignItems: "center",
+      justifyContent: "space-between",
+      minHeight: 44,
+    },
+    logo: {
+      fontFamily: "Changa_700Bold",
+      fontSize: 14,
+      color: C.accent,
+      letterSpacing: 1,
+      minWidth: 56,
+    },
+    title: {
+      fontFamily: "Changa_700Bold",
+      fontSize: 18,
+      color: "#FFFFFF",
+      flex: 1,
+      textAlign: "center",
+    },
+    right: {
+      flexDirection: "row",
+      alignItems: "center",
+      gap: 8,
+      minWidth: 56,
+      justifyContent: "flex-end",
+    },
+    logoutBtn: {
+      width: 36,
+      height: 36,
+      borderRadius: 18,
+      backgroundColor: "rgba(255,255,255,0.15)",
+      alignItems: "center",
+      justifyContent: "center",
+    },
+    logoutText: { fontSize: 18, color: "#FFF" },
+  });
+}

@@ -4,15 +4,15 @@ import { router } from "expo-router";
 import { useGetDriverTrips, useGetDriverDashboard, useGetDriverWithdrawals } from "@workspace/api-client-react";
 import { useAuth } from "@/context/AuthContext";
 import { useLanguage } from "@/context/LanguageContext";
+import { useTheme } from "@/context/ThemeContext";
 import { Header } from "@/components/Header";
 import { TabBar } from "@/components/TabBar";
-import colors from "@/constants/colors";
 import { generateAndSharePDF } from "@/utils/pdfReport";
 
 export default function DriverTrips() {
   const { t, isRTL } = useLanguage();
   const { user } = useAuth();
-  const C = colors.light;
+  const { C } = useTheme();
   const { data, isLoading } = useGetDriverTrips({});
   const { data: dashboard } = useGetDriverDashboard();
   const { data: withdrawals } = useGetDriverWithdrawals();
@@ -68,59 +68,61 @@ export default function DriverTrips() {
     }
   }
 
+  const s = makeStyles(C);
+
   return (
-    <View style={styles.screen}>
+    <View style={s.screen}>
       <Header
         title={t.driver.trips}
         right={
-          <TouchableOpacity style={styles.pdfBtn} onPress={handlePDF} disabled={pdfLoading}>
+          <TouchableOpacity style={s.pdfBtn} onPress={handlePDF} disabled={pdfLoading}>
             {pdfLoading
               ? <ActivityIndicator color="#FFF" size="small" />
-              : <Text style={styles.pdfBtnText}>📄 PDF</Text>
+              : <Text style={s.pdfBtnText}>📄 PDF</Text>
             }
           </TouchableOpacity>
         }
       />
 
       {!isLoading && data && (
-        <View style={styles.summary}>
-          <View style={styles.summaryItem}>
-            <Text style={styles.summaryVal}>{data.total}</Text>
-            <Text style={[styles.summaryLbl, { textAlign: isRTL ? "right" : "left" }]}>{t.driver.totalTrips}</Text>
+        <View style={s.summary}>
+          <View style={s.summaryItem}>
+            <Text style={s.summaryVal}>{data.total}</Text>
+            <Text style={[s.summaryLbl, { textAlign: isRTL ? "right" : "left" }]}>{t.driver.totalTrips}</Text>
           </View>
-          <View style={styles.summaryDiv} />
-          <View style={styles.summaryItem}>
-            <Text style={[styles.summaryVal, { color: C.success }]}>{(data.totalEarnings ?? 0).toFixed(0)}</Text>
-            <Text style={[styles.summaryLbl, { textAlign: isRTL ? "right" : "left" }]}>{t.driver.earnings} (دج)</Text>
+          <View style={s.summaryDiv} />
+          <View style={s.summaryItem}>
+            <Text style={[s.summaryVal, { color: C.success }]}>{(data.totalEarnings ?? 0).toFixed(0)}</Text>
+            <Text style={[s.summaryLbl, { textAlign: isRTL ? "right" : "left" }]}>{t.driver.earnings} (دج)</Text>
           </View>
-          <View style={styles.summaryDiv} />
-          <View style={styles.summaryItem}>
-            <Text style={[styles.summaryVal, { color: C.primary }]}>{(dashboard?.balance ?? 0).toFixed(0)}</Text>
-            <Text style={styles.summaryLbl}>الرصيد (دج)</Text>
+          <View style={s.summaryDiv} />
+          <View style={s.summaryItem}>
+            <Text style={[s.summaryVal, { color: C.primary }]}>{(dashboard?.balance ?? 0).toFixed(0)}</Text>
+            <Text style={s.summaryLbl}>الرصيد (دج)</Text>
           </View>
         </View>
       )}
 
       {isLoading ? (
-        <ActivityIndicator size="large" color={C.primary} style={styles.loader} />
+        <ActivityIndicator size="large" color={C.primary} style={s.loader} />
       ) : (
-        <ScrollView style={styles.scroll} contentContainerStyle={styles.list}>
+        <ScrollView style={s.scroll} contentContainerStyle={s.list}>
           {trips.length === 0 ? (
-            <Text style={styles.empty}>{t.driver.noTrips}</Text>
+            <Text style={s.empty}>{t.driver.noTrips}</Text>
           ) : (
             trips.map((trip, i) => (
-              <View key={trip.id ?? i} style={styles.card}>
-                <View style={styles.cardLeft}>
-                  <Text style={styles.cardIcon}>🚍</Text>
+              <View key={trip.id ?? i} style={s.card}>
+                <View style={s.cardLeft}>
+                  <Text style={s.cardIcon}>🚍</Text>
                 </View>
-                <View style={styles.cardBody}>
-                  <Text style={styles.cardType}>{cardTypeLabels[trip.cardType ?? ""] ?? (trip.cardType ?? "-")}</Text>
-                  <Text style={styles.cardDate}>{trip.createdAt ? new Date(trip.createdAt).toLocaleString("ar-DZ") : ""}</Text>
+                <View style={s.cardBody}>
+                  <Text style={s.cardType}>{cardTypeLabels[trip.cardType ?? ""] ?? (trip.cardType ?? "-")}</Text>
+                  <Text style={s.cardDate}>{trip.createdAt ? new Date(trip.createdAt).toLocaleString("ar-DZ") : ""}</Text>
                 </View>
-                <View style={styles.cardRight}>
-                  <Text style={styles.earning}>+{Number(trip.driverEarning).toFixed(0)}</Text>
-                  <Text style={styles.currency}>{t.common.dinar}</Text>
-                  <Text style={styles.fee}>-{Number(trip.platformFee).toFixed(0)} {t.common.dinar}</Text>
+                <View style={s.cardRight}>
+                  <Text style={s.earning}>+{Number(trip.driverEarning).toFixed(0)}</Text>
+                  <Text style={s.currency}>{t.common.dinar}</Text>
+                  <Text style={s.fee}>-{Number(trip.platformFee).toFixed(0)} {t.common.dinar}</Text>
                 </View>
               </View>
             ))
@@ -132,39 +134,40 @@ export default function DriverTrips() {
   );
 }
 
-const C = colors.light;
-const styles = StyleSheet.create({
-  screen: { flex: 1, backgroundColor: C.background },
-  pdfBtn: {
-    backgroundColor: "rgba(255,255,255,0.2)", borderRadius: 8,
-    paddingHorizontal: 10, paddingVertical: 5,
-  },
-  pdfBtnText: { fontFamily: "Changa_600SemiBold", fontSize: 12, color: "#FFF" },
-  summary: {
-    flexDirection: "row", backgroundColor: C.card, padding: 14,
-    marginHorizontal: 12, marginTop: 10,
-    borderRadius: 12, borderWidth: 1, borderColor: C.border, alignItems: "center",
-  },
-  summaryItem: { flex: 1, alignItems: "center" },
-  summaryVal: { fontFamily: "Changa_700Bold", fontSize: 20, color: C.primary },
-  summaryLbl: { fontFamily: "Changa_400Regular", fontSize: 11, color: C.mutedForeground, marginTop: 2 },
-  summaryDiv: { width: 1, height: 36, backgroundColor: C.border },
-  loader: { marginTop: 60 },
-  scroll: { flex: 1 },
-  list: { padding: 12, gap: 8, paddingBottom: 24 },
-  card: {
-    backgroundColor: C.card, borderRadius: 12, padding: 14,
-    flexDirection: "row", alignItems: "center", gap: 10,
-    borderWidth: 1, borderColor: C.border,
-  },
-  cardLeft: { width: 40, height: 40, borderRadius: 20, backgroundColor: C.muted, alignItems: "center", justifyContent: "center" },
-  cardIcon: { fontSize: 20 },
-  cardBody: { flex: 1 },
-  cardType: { fontFamily: "Changa_600SemiBold", fontSize: 14, color: C.foreground },
-  cardDate: { fontFamily: "Changa_400Regular", fontSize: 11, color: C.mutedForeground, marginTop: 2 },
-  cardRight: { alignItems: "flex-end" },
-  earning: { fontFamily: "Changa_700Bold", fontSize: 18, color: C.success },
-  currency: { fontFamily: "Changa_400Regular", fontSize: 11, color: C.success },
-  fee: { fontFamily: "Changa_400Regular", fontSize: 11, color: C.destructive, marginTop: 2 },
-  empty: { fontFamily: "Changa_400Regular", fontSize: 14, color: C.mutedForeground, textAlign: "center", marginTop: 60 },
-});
+function makeStyles(C: any) {
+  return StyleSheet.create({
+    screen: { flex: 1, backgroundColor: C.background },
+    pdfBtn: {
+      backgroundColor: "rgba(255,255,255,0.2)", borderRadius: 8,
+      paddingHorizontal: 10, paddingVertical: 5,
+    },
+    pdfBtnText: { fontFamily: "Changa_600SemiBold", fontSize: 12, color: "#FFF" },
+    summary: {
+      flexDirection: "row", backgroundColor: C.card, padding: 14,
+      marginHorizontal: 12, marginTop: 10,
+      borderRadius: 12, borderWidth: 1, borderColor: C.border, alignItems: "center",
+    },
+    summaryItem: { flex: 1, alignItems: "center" },
+    summaryVal: { fontFamily: "Changa_700Bold", fontSize: 20, color: C.primary },
+    summaryLbl: { fontFamily: "Changa_400Regular", fontSize: 11, color: C.mutedForeground, marginTop: 2 },
+    summaryDiv: { width: 1, height: 36, backgroundColor: C.border },
+    loader: { marginTop: 60 },
+    scroll: { flex: 1 },
+    list: { padding: 12, gap: 8, paddingBottom: 24 },
+    card: {
+      backgroundColor: C.card, borderRadius: 12, padding: 14,
+      flexDirection: "row", alignItems: "center", gap: 10,
+      borderWidth: 1, borderColor: C.border,
+    },
+    cardLeft: { width: 40, height: 40, borderRadius: 20, backgroundColor: C.muted, alignItems: "center", justifyContent: "center" },
+    cardIcon: { fontSize: 20 },
+    cardBody: { flex: 1 },
+    cardType: { fontFamily: "Changa_600SemiBold", fontSize: 14, color: C.foreground },
+    cardDate: { fontFamily: "Changa_400Regular", fontSize: 11, color: C.mutedForeground, marginTop: 2 },
+    cardRight: { alignItems: "flex-end" },
+    earning: { fontFamily: "Changa_700Bold", fontSize: 18, color: C.success },
+    currency: { fontFamily: "Changa_400Regular", fontSize: 11, color: C.success },
+    fee: { fontFamily: "Changa_400Regular", fontSize: 11, color: C.destructive, marginTop: 2 },
+    empty: { fontFamily: "Changa_400Regular", fontSize: 14, color: C.mutedForeground, textAlign: "center", marginTop: 60 },
+  });
+}

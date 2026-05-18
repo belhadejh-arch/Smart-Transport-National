@@ -3,13 +3,13 @@ import { View, Text, ScrollView, StyleSheet, TouchableOpacity, Alert, ActivityIn
 import { router } from "expo-router";
 import { useGetWithdrawalRequests, useApproveWithdrawal, useRejectWithdrawal } from "@workspace/api-client-react";
 import { useLanguage } from "@/context/LanguageContext";
+import { useTheme } from "@/context/ThemeContext";
 import { Header } from "@/components/Header";
 import { TabBar } from "@/components/TabBar";
-import colors from "@/constants/colors";
 
 export default function AdminWithdrawals() {
   const { t, isRTL } = useLanguage();
-  const C = colors.light;
+  const { C } = useTheme();
   const [filter, setFilter] = useState<"pending" | "approved" | "rejected" | undefined>("pending");
   const { data, isLoading, refetch } = useGetWithdrawalRequests({ status: filter });
   const { mutateAsync: approve } = useApproveWithdrawal();
@@ -47,48 +47,49 @@ export default function AdminWithdrawals() {
   }
 
   const statusColor: Record<string, string> = { pending: C.warning, approved: C.success, rejected: C.destructive };
+  const s = makeStyles(C);
 
   return (
-    <View style={styles.screen}>
+    <View style={s.screen}>
       <Header title={t.admin.withdrawals} />
-      <View style={styles.filterRow}>
+      <View style={s.filterRow}>
         {filters.map(f => (
-          <TouchableOpacity key={f.key} style={[styles.filterBtn, filter === f.key && styles.filterBtnActive]} onPress={() => setFilter(f.key)}>
-            <Text style={[styles.filterText, filter === f.key && styles.filterTextActive]}>{f.label}</Text>
+          <TouchableOpacity key={f.key} style={[s.filterBtn, filter === f.key && s.filterBtnActive]} onPress={() => setFilter(f.key)}>
+            <Text style={[s.filterText, filter === f.key && s.filterTextActive]}>{f.label}</Text>
           </TouchableOpacity>
         ))}
       </View>
 
-      {isLoading ? <ActivityIndicator size="large" color={C.primary} style={styles.loader} /> : (
-        <ScrollView style={styles.scroll} contentContainerStyle={styles.list}>
+      {isLoading ? <ActivityIndicator size="large" color={C.primary} style={s.loader} /> : (
+        <ScrollView style={s.scroll} contentContainerStyle={s.list}>
           {(data?.requests ?? []).map(req => (
-            <View key={req.id} style={styles.card}>
-              <View style={styles.cardTop}>
+            <View key={req.id} style={s.card}>
+              <View style={s.cardTop}>
                 <View>
-                  <Text style={styles.holderName}>{req.holderName} {req.holderLastName}</Text>
-                  <Text style={styles.amount}>{Number(req.amount).toFixed(0)} {t.common.dinar}</Text>
-                  <Text style={styles.method}>{req.method === "cash" ? t.driver.cash : t.driver.ccp}</Text>
-                  {req.phone && <Text style={styles.detail}>{t.common.phone}: {req.phone}</Text>}
-                  {req.ccpAccount && <Text style={styles.detail}>{t.driver.ccpAccount}: {req.ccpAccount}</Text>}
-                  <Text style={styles.date}>{new Date(req.createdAt).toLocaleDateString()}</Text>
+                  <Text style={s.holderName}>{req.holderName} {req.holderLastName}</Text>
+                  <Text style={s.amount}>{Number(req.amount).toFixed(0)} {t.common.dinar}</Text>
+                  <Text style={s.method}>{req.method === "cash" ? t.driver.cash : t.driver.ccp}</Text>
+                  {req.phone && <Text style={s.detail}>{t.common.phone}: {req.phone}</Text>}
+                  {req.ccpAccount && <Text style={s.detail}>{t.driver.ccpAccount}: {req.ccpAccount}</Text>}
+                  <Text style={s.date}>{new Date(req.createdAt).toLocaleDateString()}</Text>
                 </View>
-                <View style={[styles.statusBadge, { backgroundColor: statusColor[req.status] ?? C.muted }]}>
-                  <Text style={styles.statusText}>{req.status}</Text>
+                <View style={[s.statusBadge, { backgroundColor: statusColor[req.status] ?? C.muted }]}>
+                  <Text style={s.statusText}>{req.status}</Text>
                 </View>
               </View>
               {req.status === "pending" && (
-                <View style={styles.actions}>
-                  <TouchableOpacity style={[styles.actionBtn, { backgroundColor: C.success }]} onPress={() => handleApprove(req.id)}>
-                    <Text style={styles.actionBtnText}>{t.common.approve}</Text>
+                <View style={s.actions}>
+                  <TouchableOpacity style={[s.actionBtn, { backgroundColor: C.success }]} onPress={() => handleApprove(req.id)}>
+                    <Text style={s.actionBtnText}>{t.common.approve}</Text>
                   </TouchableOpacity>
-                  <TouchableOpacity style={[styles.actionBtn, { backgroundColor: C.destructive }]} onPress={() => handleReject(req.id)}>
-                    <Text style={styles.actionBtnText}>{t.common.reject}</Text>
+                  <TouchableOpacity style={[s.actionBtn, { backgroundColor: C.destructive }]} onPress={() => handleReject(req.id)}>
+                    <Text style={s.actionBtnText}>{t.common.reject}</Text>
                   </TouchableOpacity>
                 </View>
               )}
             </View>
           ))}
-          {(data?.requests ?? []).length === 0 && <Text style={styles.empty}>{t.common.noData}</Text>}
+          {(data?.requests ?? []).length === 0 && <Text style={s.empty}>{t.common.noData}</Text>}
         </ScrollView>
       )}
       <TabBar tabs={tabs} activeKey="withdrawals" />
@@ -96,28 +97,29 @@ export default function AdminWithdrawals() {
   );
 }
 
-const C = colors.light;
-const styles = StyleSheet.create({
-  screen: { flex: 1, backgroundColor: C.background },
-  filterRow: { flexDirection: "row", paddingHorizontal: 12, paddingVertical: 8, gap: 6 },
-  filterBtn: { paddingHorizontal: 12, paddingVertical: 6, borderRadius: 20, backgroundColor: C.muted },
-  filterBtnActive: { backgroundColor: C.primary },
-  filterText: { fontFamily: "Changa_500Medium", fontSize: 12, color: C.mutedForeground },
-  filterTextActive: { color: "#FFF" },
-  loader: { marginTop: 60 },
-  scroll: { flex: 1 },
-  list: { padding: 12, gap: 10, paddingBottom: 24 },
-  card: { backgroundColor: C.card, borderRadius: 14, padding: 14, borderWidth: 1, borderColor: C.border },
-  cardTop: { flexDirection: "row", justifyContent: "space-between", alignItems: "flex-start" },
-  holderName: { fontFamily: "Changa_700Bold", fontSize: 15, color: C.foreground },
-  amount: { fontFamily: "Changa_700Bold", fontSize: 18, color: C.primary, marginTop: 4 },
-  method: { fontFamily: "Changa_500Medium", fontSize: 13, color: C.mutedForeground, marginTop: 2 },
-  detail: { fontFamily: "Changa_400Regular", fontSize: 12, color: C.mutedForeground },
-  date: { fontFamily: "Changa_400Regular", fontSize: 11, color: C.mutedForeground, marginTop: 4 },
-  statusBadge: { paddingHorizontal: 8, paddingVertical: 4, borderRadius: 8 },
-  statusText: { fontFamily: "Changa_600SemiBold", fontSize: 11, color: "#FFF" },
-  actions: { flexDirection: "row", gap: 8, marginTop: 12 },
-  actionBtn: { flex: 1, borderRadius: 8, padding: 10, alignItems: "center" },
-  actionBtnText: { fontFamily: "Changa_600SemiBold", fontSize: 13, color: "#FFF" },
-  empty: { fontFamily: "Changa_400Regular", fontSize: 14, color: C.mutedForeground, textAlign: "center", marginTop: 40 },
-});
+function makeStyles(C: any) {
+  return StyleSheet.create({
+    screen: { flex: 1, backgroundColor: C.background },
+    filterRow: { flexDirection: "row", paddingHorizontal: 12, paddingVertical: 8, gap: 6 },
+    filterBtn: { paddingHorizontal: 12, paddingVertical: 6, borderRadius: 20, backgroundColor: C.muted },
+    filterBtnActive: { backgroundColor: C.primary },
+    filterText: { fontFamily: "Changa_500Medium", fontSize: 12, color: C.mutedForeground },
+    filterTextActive: { color: "#FFF" },
+    loader: { marginTop: 60 },
+    scroll: { flex: 1 },
+    list: { padding: 12, gap: 10, paddingBottom: 24 },
+    card: { backgroundColor: C.card, borderRadius: 14, padding: 14, borderWidth: 1, borderColor: C.border },
+    cardTop: { flexDirection: "row", justifyContent: "space-between", alignItems: "flex-start" },
+    holderName: { fontFamily: "Changa_700Bold", fontSize: 15, color: C.foreground },
+    amount: { fontFamily: "Changa_700Bold", fontSize: 18, color: C.primary, marginTop: 4 },
+    method: { fontFamily: "Changa_500Medium", fontSize: 13, color: C.mutedForeground, marginTop: 2 },
+    detail: { fontFamily: "Changa_400Regular", fontSize: 12, color: C.mutedForeground },
+    date: { fontFamily: "Changa_400Regular", fontSize: 11, color: C.mutedForeground, marginTop: 4 },
+    statusBadge: { paddingHorizontal: 8, paddingVertical: 4, borderRadius: 8 },
+    statusText: { fontFamily: "Changa_600SemiBold", fontSize: 11, color: "#FFF" },
+    actions: { flexDirection: "row", gap: 8, marginTop: 12 },
+    actionBtn: { flex: 1, borderRadius: 8, padding: 10, alignItems: "center" },
+    actionBtnText: { fontFamily: "Changa_600SemiBold", fontSize: 13, color: "#FFF" },
+    empty: { fontFamily: "Changa_400Regular", fontSize: 14, color: C.mutedForeground, textAlign: "center", marginTop: 40 },
+  });
+}

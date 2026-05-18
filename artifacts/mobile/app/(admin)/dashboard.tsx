@@ -4,16 +4,16 @@ import { router } from "expo-router";
 import { useGetAdminStats, useGetAdminDriverEarnings, useGetAdminDistributorBalances } from "@workspace/api-client-react";
 import { useAuth } from "@/context/AuthContext";
 import { useLanguage } from "@/context/LanguageContext";
+import { useTheme } from "@/context/ThemeContext";
 import { Header } from "@/components/Header";
 import { StatCard } from "@/components/StatCard";
 import { TabBar } from "@/components/TabBar";
-import colors from "@/constants/colors";
 import { generateAndSharePDF } from "@/utils/pdfReport";
 
 export default function AdminDashboard() {
   const { t, isRTL } = useLanguage();
   const { logout, switchAccount, user } = useAuth();
-  const C = colors.light;
+  const { C } = useTheme();
   const isMainAdmin = user?.role === "admin";
 
   const [pdfLoading, setPdfLoading] = useState(false);
@@ -92,57 +92,57 @@ export default function AdminDashboard() {
     finally { setPdfLoading(false); }
   }
 
+  const s = makeStyles(C);
+
   return (
-    <View style={styles.screen}>
+    <View style={s.screen}>
       <Header
         title={`${t.admin.dashboard}${!isMainAdmin ? " (فرعي)" : ""}`}
         showLogout={false}
         right={
-          <View style={styles.headerActions}>
-            <TouchableOpacity onPress={switchAccount} style={styles.actionBtn}><Text style={styles.actionBtnText}>↔</Text></TouchableOpacity>
-            <TouchableOpacity onPress={confirmLogout} style={styles.actionBtn}><Text style={styles.actionBtnText}>⏻</Text></TouchableOpacity>
+          <View style={s.headerActions}>
+            <TouchableOpacity onPress={switchAccount} style={s.actionBtn}><Text style={s.actionBtnText}>↔</Text></TouchableOpacity>
+            <TouchableOpacity onPress={confirmLogout} style={s.actionBtn}><Text style={s.actionBtnText}>⏻</Text></TouchableOpacity>
           </View>
         }
       />
 
-      <ScrollView style={styles.scroll} contentContainerStyle={styles.content}>
+      <ScrollView style={s.scroll} contentContainerStyle={s.content}>
 
-        {/* Sub-admin badge */}
         {!isMainAdmin && (
-          <View style={styles.subAdminBadge}>
-            <Text style={styles.subAdminBadgeText}>🛡️ أنت تعمل كأدمن فرعي — بعض الميزات مقيدة</Text>
+          <View style={s.subAdminBadge}>
+            <Text style={s.subAdminBadgeText}>🛡️ أنت تعمل كأدمن فرعي — بعض الميزات مقيدة</Text>
           </View>
         )}
 
-        {/* Main admin: full stats */}
         {isMainAdmin && (
           <>
             {isLoading ? (
-              <ActivityIndicator size="large" color={C.primary} style={styles.loader} />
+              <ActivityIndicator size="large" color={C.primary} style={s.loader} />
             ) : stats ? (
               <>
-                <View style={styles.section}>
-                  <Text style={[styles.sectionTitle, { textAlign: isRTL ? "right" : "left" }]}>
+                <View style={s.section}>
+                  <Text style={[s.sectionTitle, { textAlign: isRTL ? "right" : "left" }]}>
                     {t.admin.todayEarnings}: {stats.todayEarnings?.toFixed(0)} {t.common.dinar}
                   </Text>
-                  <View style={styles.row}>
+                  <View style={s.row}>
                     <StatCard label={t.admin.todayTransactions}  value={stats.todayTransactions ?? 0}  icon="🔄" />
                     <StatCard label={t.admin.platformEarnings}   value={`${stats.totalPlatformEarnings?.toFixed(0)} ${t.common.dinar}`} icon="💹" color={C.success} />
                   </View>
                 </View>
 
-                <View style={styles.section}>
-                  <Text style={[styles.sectionTitle, { textAlign: isRTL ? "right" : "left" }]}>{t.admin.users}</Text>
-                  <View style={styles.row}>
+                <View style={s.section}>
+                  <Text style={[s.sectionTitle, { textAlign: isRTL ? "right" : "left" }]}>{t.admin.users}</Text>
+                  <View style={s.row}>
                     <StatCard label={t.admin.totalDrivers}      value={stats.totalDrivers ?? 0}      icon="🚍" small />
                     <StatCard label={t.admin.totalCustomers}    value={stats.totalCustomers ?? 0}    icon="👤" small />
                     <StatCard label={t.admin.totalDistributors} value={stats.totalDistributors ?? 0} icon="🏪" small />
                   </View>
                 </View>
 
-                <View style={styles.section}>
-                  <Text style={[styles.sectionTitle, { textAlign: isRTL ? "right" : "left" }]}>{t.common.pending}</Text>
-                  <View style={styles.row}>
+                <View style={s.section}>
+                  <Text style={[s.sectionTitle, { textAlign: isRTL ? "right" : "left" }]}>{t.common.pending}</Text>
+                  <View style={s.row}>
                     <StatCard label={t.admin.pendingCards}       value={stats.pendingCards ?? 0}       icon="⏳" color={C.warning} />
                     <StatCard label={t.admin.pendingWithdrawals} value={stats.pendingWithdrawals ?? 0} icon="💸" color={C.warning} />
                   </View>
@@ -150,16 +150,15 @@ export default function AdminDashboard() {
               </>
             ) : null}
 
-            {/* Driver earnings PDF */}
-            <View style={styles.section}>
-              <Text style={[styles.sectionTitle, { textAlign: isRTL ? "right" : "left" }]}>📊 تقارير السائقين</Text>
-              <TouchableOpacity style={styles.reportBtn} onPress={handleDriversPDF} disabled={pdfLoading} activeOpacity={0.85}>
+            <View style={s.section}>
+              <Text style={[s.sectionTitle, { textAlign: isRTL ? "right" : "left" }]}>📊 تقارير السائقين</Text>
+              <TouchableOpacity style={s.reportBtn} onPress={handleDriversPDF} disabled={pdfLoading} activeOpacity={0.85}>
                 {pdfLoading ? <ActivityIndicator color="#FFF" /> : (
                   <>
-                    <Text style={styles.reportBtnIcon}>📄</Text>
+                    <Text style={s.reportBtnIcon}>📄</Text>
                     <View style={{ flex: 1 }}>
-                      <Text style={styles.reportBtnTitle}>تقرير أرباح ومكاسب السائقين</Text>
-                      <Text style={styles.reportBtnSub}>رحلات • مكاسب • مسحوبات • أرصدة</Text>
+                      <Text style={s.reportBtnTitle}>تقرير أرباح ومكاسب السائقين</Text>
+                      <Text style={s.reportBtnSub}>رحلات • مكاسب • مسحوبات • أرصدة</Text>
                     </View>
                     <Text style={{ color: "rgba(255,255,255,0.7)", fontSize: 20 }}>›</Text>
                   </>
@@ -169,37 +168,36 @@ export default function AdminDashboard() {
           </>
         )}
 
-        {/* Distributor balances — visible to all admins */}
-        <View style={styles.section}>
-          <Text style={[styles.sectionTitle, { textAlign: isRTL ? "right" : "left" }]}>🏪 أرصدة الموزعين</Text>
+        <View style={s.section}>
+          <Text style={[s.sectionTitle, { textAlign: isRTL ? "right" : "left" }]}>🏪 أرصدة الموزعين</Text>
 
           {distLoading ? (
             <ActivityIndicator color={C.accent} />
           ) : (
             <>
               {(distData?.distributors ?? []).map((d: any) => (
-                <View key={d.id} style={styles.distRow}>
-                  <View style={styles.distInfo}>
-                    <Text style={styles.distName}>{d.name} {d.lastName}</Text>
-                    <Text style={styles.distId}>ID: #{d.id} • {d.totalTopups} عملية شحن</Text>
+                <View key={d.id} style={s.distRow}>
+                  <View style={s.distInfo}>
+                    <Text style={s.distName}>{d.name} {d.lastName}</Text>
+                    <Text style={s.distId}>ID: #{d.id} • {d.totalTopups} عملية شحن</Text>
                   </View>
-                  <View style={styles.distRight}>
-                    <Text style={styles.distBalance}>{Number(d.balance).toLocaleString()}</Text>
-                    <Text style={styles.distCurrency}>دج</Text>
+                  <View style={s.distRight}>
+                    <Text style={s.distBalance}>{Number(d.balance).toLocaleString()}</Text>
+                    <Text style={s.distCurrency}>دج</Text>
                   </View>
                 </View>
               ))}
-              {!(distData?.distributors?.length) && <Text style={styles.emptyTxt}>لا يوجد موزعون</Text>}
+              {!(distData?.distributors?.length) && <Text style={s.emptyTxt}>لا يوجد موزعون</Text>}
             </>
           )}
 
-          <TouchableOpacity style={[styles.reportBtn, { backgroundColor: C.accent, marginTop: 10 }]} onPress={handleDistributorsPDF} disabled={pdfLoading} activeOpacity={0.85}>
+          <TouchableOpacity style={[s.reportBtn, { backgroundColor: C.accent, marginTop: 10 }]} onPress={handleDistributorsPDF} disabled={pdfLoading} activeOpacity={0.85}>
             {pdfLoading ? <ActivityIndicator color="#FFF" /> : (
               <>
-                <Text style={styles.reportBtnIcon}>📄</Text>
+                <Text style={s.reportBtnIcon}>📄</Text>
                 <View style={{ flex: 1 }}>
-                  <Text style={styles.reportBtnTitle}>تقرير أرصدة وعمليات الموزعين</Text>
-                  <Text style={styles.reportBtnSub}>رصيد متاح • عمليات شحن • أرباح</Text>
+                  <Text style={s.reportBtnTitle}>تقرير أرصدة وعمليات الموزعين</Text>
+                  <Text style={s.reportBtnSub}>رصيد متاح • عمليات شحن • أرباح</Text>
                 </View>
                 <Text style={{ color: "rgba(255,255,255,0.7)", fontSize: 20 }}>›</Text>
               </>
@@ -207,22 +205,21 @@ export default function AdminDashboard() {
           </TouchableOpacity>
         </View>
 
-        {/* Quick actions */}
-        <View style={styles.section}>
-          <Text style={[styles.sectionTitle, { textAlign: isRTL ? "right" : "left" }]}>{t.common.create}</Text>
-          <View style={styles.row}>
-            <TouchableOpacity style={styles.actionCard} onPress={() => router.push("/(admin)/create-user")} activeOpacity={0.8}>
-              <Text style={styles.actionCardIcon}>🚍</Text>
-              <Text style={styles.actionCardLabel}>{t.admin.createDriver}</Text>
+        <View style={s.section}>
+          <Text style={[s.sectionTitle, { textAlign: isRTL ? "right" : "left" }]}>{t.common.create}</Text>
+          <View style={s.row}>
+            <TouchableOpacity style={s.actionCard} onPress={() => router.push("/(admin)/create-user")} activeOpacity={0.8}>
+              <Text style={s.actionCardIcon}>🚍</Text>
+              <Text style={s.actionCardLabel}>{t.admin.createDriver}</Text>
             </TouchableOpacity>
-            <TouchableOpacity style={[styles.actionCard, { backgroundColor: C.accent }]} onPress={() => router.push("/(admin)/create-user")} activeOpacity={0.8}>
-              <Text style={styles.actionCardIcon}>🏪</Text>
-              <Text style={styles.actionCardLabel}>{t.admin.createDistributor}</Text>
+            <TouchableOpacity style={[s.actionCard, { backgroundColor: C.accent }]} onPress={() => router.push("/(admin)/create-user")} activeOpacity={0.8}>
+              <Text style={s.actionCardIcon}>🏪</Text>
+              <Text style={s.actionCardLabel}>{t.admin.createDistributor}</Text>
             </TouchableOpacity>
             {isMainAdmin && (
-              <TouchableOpacity style={[styles.actionCard, { backgroundColor: "#6366F1" }]} onPress={() => router.push("/(admin)/create-user")} activeOpacity={0.8}>
-                <Text style={styles.actionCardIcon}>🛡️</Text>
-                <Text style={styles.actionCardLabel}>أدمن فرعي</Text>
+              <TouchableOpacity style={[s.actionCard, { backgroundColor: "#6366F1" }]} onPress={() => router.push("/(admin)/create-user")} activeOpacity={0.8}>
+                <Text style={s.actionCardIcon}>🛡️</Text>
+                <Text style={s.actionCardLabel}>أدمن فرعي</Text>
               </TouchableOpacity>
             )}
           </View>
@@ -234,41 +231,42 @@ export default function AdminDashboard() {
   );
 }
 
-const C = colors.light;
-const styles = StyleSheet.create({
-  screen: { flex: 1, backgroundColor: C.background },
-  scroll: { flex: 1 },
-  content: { padding: 16, paddingBottom: 24, gap: 4 },
-  loader: { marginTop: 40 },
-  section: { marginBottom: 18 },
-  sectionTitle: { fontFamily: "Changa_700Bold", fontSize: 16, color: C.foreground, marginBottom: 10 },
-  row: { flexDirection: "row", gap: 10 },
-  subAdminBadge: { backgroundColor: "#EEF2FF", borderRadius: 10, padding: 12, borderWidth: 1, borderColor: "#C7D2FE", marginBottom: 12 },
-  subAdminBadgeText: { fontFamily: "Changa_500Medium", fontSize: 13, color: "#4338CA", textAlign: "center" },
-  reportBtn: {
-    backgroundColor: C.primary, borderRadius: 14, padding: 16,
-    flexDirection: "row", alignItems: "center", gap: 12,
-    shadowColor: C.primary, shadowOffset: { width: 0, height: 3 }, shadowOpacity: 0.25, shadowRadius: 6, elevation: 4,
-  },
-  reportBtnIcon: { fontSize: 28 },
-  reportBtnTitle: { fontFamily: "Changa_700Bold", fontSize: 14, color: "#FFF" },
-  reportBtnSub: { fontFamily: "Changa_400Regular", fontSize: 11, color: "rgba(255,255,255,0.75)", marginTop: 2 },
-  distRow: {
-    backgroundColor: C.card, borderRadius: 12, padding: 14, marginBottom: 8,
-    flexDirection: "row", alignItems: "center", gap: 10,
-    borderWidth: 1, borderColor: C.border,
-  },
-  distInfo: { flex: 1 },
-  distName: { fontFamily: "Changa_600SemiBold", fontSize: 14, color: C.foreground },
-  distId: { fontFamily: "Changa_400Regular", fontSize: 11, color: C.mutedForeground, marginTop: 2 },
-  distRight: { alignItems: "flex-end" },
-  distBalance: { fontFamily: "Changa_700Bold", fontSize: 22, color: C.accent },
-  distCurrency: { fontFamily: "Changa_500Medium", fontSize: 12, color: C.mutedForeground },
-  emptyTxt: { fontFamily: "Changa_400Regular", fontSize: 13, color: C.mutedForeground, textAlign: "center", paddingVertical: 16 },
-  actionCard: { flex: 1, backgroundColor: C.primary, borderRadius: 16, padding: 16, alignItems: "center", justifyContent: "center", gap: 6, minHeight: 80 },
-  actionCardIcon: { fontSize: 28 },
-  actionCardLabel: { fontFamily: "Changa_600SemiBold", fontSize: 13, color: "#FFF", textAlign: "center" },
-  headerActions: { flexDirection: "row", gap: 6 },
-  actionBtn: { width: 34, height: 34, borderRadius: 17, backgroundColor: "rgba(255,255,255,0.15)", alignItems: "center", justifyContent: "center" },
-  actionBtnText: { fontSize: 16, color: "#FFF" },
-});
+function makeStyles(C: any) {
+  return StyleSheet.create({
+    screen: { flex: 1, backgroundColor: C.background },
+    scroll: { flex: 1 },
+    content: { padding: 16, paddingBottom: 24, gap: 4 },
+    loader: { marginTop: 40 },
+    section: { marginBottom: 18 },
+    sectionTitle: { fontFamily: "Changa_700Bold", fontSize: 16, color: C.foreground, marginBottom: 10 },
+    row: { flexDirection: "row", gap: 10 },
+    subAdminBadge: { backgroundColor: "#EEF2FF", borderRadius: 10, padding: 12, borderWidth: 1, borderColor: "#C7D2FE", marginBottom: 12 },
+    subAdminBadgeText: { fontFamily: "Changa_500Medium", fontSize: 13, color: "#4338CA", textAlign: "center" },
+    reportBtn: {
+      backgroundColor: C.primary, borderRadius: 14, padding: 16,
+      flexDirection: "row", alignItems: "center", gap: 12,
+      shadowColor: C.primary, shadowOffset: { width: 0, height: 3 }, shadowOpacity: 0.25, shadowRadius: 6, elevation: 4,
+    },
+    reportBtnIcon: { fontSize: 28 },
+    reportBtnTitle: { fontFamily: "Changa_700Bold", fontSize: 14, color: "#FFF" },
+    reportBtnSub: { fontFamily: "Changa_400Regular", fontSize: 11, color: "rgba(255,255,255,0.75)", marginTop: 2 },
+    distRow: {
+      backgroundColor: C.card, borderRadius: 12, padding: 14, marginBottom: 8,
+      flexDirection: "row", alignItems: "center", gap: 10,
+      borderWidth: 1, borderColor: C.border,
+    },
+    distInfo: { flex: 1 },
+    distName: { fontFamily: "Changa_600SemiBold", fontSize: 14, color: C.foreground },
+    distId: { fontFamily: "Changa_400Regular", fontSize: 11, color: C.mutedForeground, marginTop: 2 },
+    distRight: { alignItems: "flex-end" },
+    distBalance: { fontFamily: "Changa_700Bold", fontSize: 22, color: C.accent },
+    distCurrency: { fontFamily: "Changa_500Medium", fontSize: 12, color: C.mutedForeground },
+    emptyTxt: { fontFamily: "Changa_400Regular", fontSize: 13, color: C.mutedForeground, textAlign: "center", paddingVertical: 16 },
+    actionCard: { flex: 1, backgroundColor: C.primary, borderRadius: 16, padding: 16, alignItems: "center", justifyContent: "center", gap: 6, minHeight: 80 },
+    actionCardIcon: { fontSize: 28 },
+    actionCardLabel: { fontFamily: "Changa_600SemiBold", fontSize: 13, color: "#FFF", textAlign: "center" },
+    headerActions: { flexDirection: "row", gap: 6 },
+    actionBtn: { width: 34, height: 34, borderRadius: 17, backgroundColor: "rgba(255,255,255,0.15)", alignItems: "center", justifyContent: "center" },
+    actionBtnText: { fontSize: 16, color: "#FFF" },
+  });
+}

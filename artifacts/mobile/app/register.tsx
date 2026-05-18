@@ -4,11 +4,12 @@ import { router } from "expo-router";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useLanguage } from "@/context/LanguageContext";
 import { useAuth } from "@/context/AuthContext";
-import colors from "@/constants/colors";
+import { useTheme } from "@/context/ThemeContext";
 
 export default function RegisterScreen() {
   const { t, isRTL } = useLanguage();
   const { login } = useAuth();
+  const { C } = useTheme();
   const insets = useSafeAreaInsets();
   const [form, setForm] = useState({ name: "", lastName: "", email: "", phone: "", password: "" });
   const [loading, setLoading] = useState(false);
@@ -49,10 +50,12 @@ export default function RegisterScreen() {
     { key: "password", label: t.common.password, secure: true },
   ];
 
+  const styles = makeStyles(C);
+
   return (
     <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === "ios" ? "padding" : "height"}>
       <ScrollView
-        style={{ flex: 1, backgroundColor: colors.light.background }}
+        style={{ flex: 1, backgroundColor: C.background }}
         contentContainerStyle={[styles.container, { paddingTop: insets.top + (Platform.OS === "web" ? 67 : 20), paddingBottom: insets.bottom + (Platform.OS === "web" ? 34 : 20) }]}
         keyboardShouldPersistTaps="handled"
       >
@@ -77,7 +80,7 @@ export default function RegisterScreen() {
                 secureTextEntry={f.secure}
                 autoCapitalize="none"
                 placeholder={f.label}
-                placeholderTextColor={colors.light.mutedForeground}
+                placeholderTextColor={C.mutedForeground}
               />
             </View>
           ))}
@@ -97,38 +100,39 @@ export default function RegisterScreen() {
   );
 }
 
-const C = colors.light;
-const styles = StyleSheet.create({
-  container: { alignItems: "center", paddingHorizontal: 20 },
-  header: { alignItems: "center", marginBottom: 24 },
-  logoCircle: {
-    width: 70, height: 70, borderRadius: 35,
-    backgroundColor: C.primary, alignItems: "center", justifyContent: "center", marginBottom: 10,
-  },
-  logoText: { fontFamily: "Changa_700Bold", fontSize: 18, color: "#FFF", letterSpacing: 2 },
-  logoDZ: { fontFamily: "Changa_700Bold", fontSize: 9, color: "rgba(255,255,255,0.8)", letterSpacing: 3 },
-  appName: { fontFamily: "Changa_700Bold", fontSize: 26, color: C.primary },
-  card: {
-    backgroundColor: C.card, borderRadius: 20, padding: 24, width: "100%",
-    shadowColor: "#000", shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.08, shadowRadius: 12, elevation: 4,
-  },
-  cardTitle: { fontFamily: "Changa_700Bold", fontSize: 22, color: C.foreground, marginBottom: 20 },
-  field: { marginBottom: 14 },
-  label: { fontFamily: "Changa_500Medium", fontSize: 14, color: C.mutedForeground, marginBottom: 6 },
-  input: {
-    backgroundColor: C.input, borderRadius: 12, padding: 14,
-    fontFamily: "Changa_400Regular", fontSize: 16, color: C.foreground,
-    borderWidth: 1.5, borderColor: C.border,
-  },
-  btn: {
-    backgroundColor: C.primary, borderRadius: 14, padding: 16,
-    alignItems: "center", marginTop: 8,
-    shadowColor: C.primary, shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.35, shadowRadius: 8, elevation: 6,
-  },
-  btnText: { fontFamily: "Changa_700Bold", fontSize: 18, color: "#FFF" },
-  loginLink: { marginTop: 16, alignItems: "center" },
-  loginLinkText: { fontFamily: "Changa_400Regular", fontSize: 14, color: C.mutedForeground },
-  loginLinkBold: { fontFamily: "Changa_600SemiBold", color: C.primary },
-});
+function makeStyles(C: any) {
+  return StyleSheet.create({
+    container: { alignItems: "center", paddingHorizontal: 20 },
+    header: { alignItems: "center", marginBottom: 24 },
+    logoCircle: {
+      width: 70, height: 70, borderRadius: 35,
+      backgroundColor: C.primary, alignItems: "center", justifyContent: "center", marginBottom: 10,
+    },
+    logoText: { fontFamily: "Changa_700Bold", fontSize: 18, color: "#FFF", letterSpacing: 2 },
+    logoDZ: { fontFamily: "Changa_700Bold", fontSize: 9, color: "rgba(255,255,255,0.8)", letterSpacing: 3 },
+    appName: { fontFamily: "Changa_700Bold", fontSize: 26, color: C.primary },
+    card: {
+      backgroundColor: C.card, borderRadius: 20, padding: 24, width: "100%",
+      shadowColor: "#000", shadowOffset: { width: 0, height: 4 },
+      shadowOpacity: 0.08, shadowRadius: 12, elevation: 4,
+    },
+    cardTitle: { fontFamily: "Changa_700Bold", fontSize: 22, color: C.foreground, marginBottom: 20 },
+    field: { marginBottom: 14 },
+    label: { fontFamily: "Changa_500Medium", fontSize: 14, color: C.mutedForeground, marginBottom: 6 },
+    input: {
+      backgroundColor: C.input, borderRadius: 12, padding: 14,
+      fontFamily: "Changa_400Regular", fontSize: 16, color: C.foreground,
+      borderWidth: 1.5, borderColor: C.border,
+    },
+    btn: {
+      backgroundColor: C.primary, borderRadius: 14, padding: 16,
+      alignItems: "center", marginTop: 8,
+      shadowColor: C.primary, shadowOffset: { width: 0, height: 4 },
+      shadowOpacity: 0.35, shadowRadius: 8, elevation: 6,
+    },
+    btnText: { fontFamily: "Changa_700Bold", fontSize: 18, color: "#FFF" },
+    loginLink: { marginTop: 16, alignItems: "center" },
+    loginLinkText: { fontFamily: "Changa_400Regular", fontSize: 14, color: C.mutedForeground },
+    loginLinkBold: { fontFamily: "Changa_600SemiBold", color: C.primary },
+  });
+}

@@ -4,15 +4,15 @@ import { router } from "expo-router";
 import { useGetCustomerTransactions, useGetCustomerCards } from "@workspace/api-client-react";
 import { useLanguage } from "@/context/LanguageContext";
 import { useAuth } from "@/context/AuthContext";
+import { useTheme } from "@/context/ThemeContext";
 import { Header } from "@/components/Header";
 import { TabBar } from "@/components/TabBar";
-import colors from "@/constants/colors";
 import { generateAndSharePDF } from "@/utils/pdfReport";
 
 export default function CustomerTransactions() {
   const { t, isRTL } = useLanguage();
   const { user } = useAuth();
-  const C = colors.light;
+  const { C } = useTheme();
   const { data, isLoading } = useGetCustomerTransactions();
   const { data: cardData } = useGetCustomerCards();
   const [pdfLoading, setPdfLoading] = useState(false);
@@ -64,57 +64,58 @@ export default function CustomerTransactions() {
     }
   }
 
+  const s = makeStyles(C);
+
   return (
-    <View style={styles.screen}>
+    <View style={s.screen}>
       <Header
         title={t.customer.transactions}
         right={
-          <TouchableOpacity style={styles.pdfBtn} onPress={handlePDF} disabled={pdfLoading}>
+          <TouchableOpacity style={s.pdfBtn} onPress={handlePDF} disabled={pdfLoading}>
             {pdfLoading
               ? <ActivityIndicator color="#FFF" size="small" />
-              : <Text style={styles.pdfBtnText}>📄 PDF</Text>
+              : <Text style={s.pdfBtnText}>📄 PDF</Text>
             }
           </TouchableOpacity>
         }
       />
       {isLoading ? (
-        <ActivityIndicator size="large" color={C.primary} style={styles.loader} />
+        <ActivityIndicator size="large" color={C.primary} style={s.loader} />
       ) : (
-        <ScrollView style={styles.scroll} contentContainerStyle={styles.list}>
-          {/* Summary strip */}
+        <ScrollView style={s.scroll} contentContainerStyle={s.list}>
           {txs.length > 0 && (
-            <View style={styles.summaryStrip}>
-              <View style={styles.summaryItem}>
-                <Text style={styles.summaryVal}>{txs.filter(x => x.type === "ride").length}</Text>
-                <Text style={styles.summaryLbl}>رحلة</Text>
+            <View style={s.summaryStrip}>
+              <View style={s.summaryItem}>
+                <Text style={s.summaryVal}>{txs.filter(x => x.type === "ride").length}</Text>
+                <Text style={s.summaryLbl}>رحلة</Text>
               </View>
-              <View style={styles.summaryDiv} />
-              <View style={styles.summaryItem}>
-                <Text style={[styles.summaryVal, { color: C.destructive }]}>{totalSpent.toFixed(0)}</Text>
-                <Text style={styles.summaryLbl}>مدفوع (دج)</Text>
+              <View style={s.summaryDiv} />
+              <View style={s.summaryItem}>
+                <Text style={[s.summaryVal, { color: C.destructive }]}>{totalSpent.toFixed(0)}</Text>
+                <Text style={s.summaryLbl}>مدفوع (دج)</Text>
               </View>
-              <View style={styles.summaryDiv} />
-              <View style={styles.summaryItem}>
-                <Text style={[styles.summaryVal, { color: C.success }]}>{totalTopup.toFixed(0)}</Text>
-                <Text style={styles.summaryLbl}>شحن (دج)</Text>
+              <View style={s.summaryDiv} />
+              <View style={s.summaryItem}>
+                <Text style={[s.summaryVal, { color: C.success }]}>{totalTopup.toFixed(0)}</Text>
+                <Text style={s.summaryLbl}>شحن (دج)</Text>
               </View>
             </View>
           )}
 
           {txs.length === 0 ? (
-            <Text style={styles.empty}>{t.customer.noTransactions}</Text>
+            <Text style={s.empty}>{t.customer.noTransactions}</Text>
           ) : (
             txs.map((tx, i) => (
-              <View key={(tx as any).id ?? i} style={styles.card}>
-                <View style={[styles.iconBox, { backgroundColor: typeColors[tx.type] ?? C.primary }]}>
-                  <Text style={styles.icon}>{typeIcons[tx.type] ?? "💳"}</Text>
+              <View key={(tx as any).id ?? i} style={s.card}>
+                <View style={[s.iconBox, { backgroundColor: typeColors[tx.type] ?? C.primary }]}>
+                  <Text style={s.icon}>{typeIcons[tx.type] ?? "💳"}</Text>
                 </View>
-                <View style={styles.cardBody}>
-                  <Text style={styles.txType}>{tx.type === "ride" ? "رحلة" : "شحن رصيد"}</Text>
-                  <Text style={styles.txCardType}>{tx.cardType ?? "-"}</Text>
-                  <Text style={styles.txDate}>{tx.createdAt ? new Date(tx.createdAt).toLocaleString("ar-DZ") : ""}</Text>
+                <View style={s.cardBody}>
+                  <Text style={s.txType}>{tx.type === "ride" ? "رحلة" : "شحن رصيد"}</Text>
+                  <Text style={s.txCardType}>{tx.cardType ?? "-"}</Text>
+                  <Text style={s.txDate}>{tx.createdAt ? new Date(tx.createdAt).toLocaleString("ar-DZ") : ""}</Text>
                 </View>
-                <Text style={[styles.txAmount, { color: tx.type === "topup" ? C.success : C.destructive }]}>
+                <Text style={[s.txAmount, { color: tx.type === "topup" ? C.success : C.destructive }]}>
                   {tx.type === "topup" ? "+" : "-"}{Number(tx.amount).toFixed(0)} {t.common.dinar}
                 </Text>
               </View>
@@ -127,36 +128,37 @@ export default function CustomerTransactions() {
   );
 }
 
-const C = colors.light;
-const styles = StyleSheet.create({
-  screen: { flex: 1, backgroundColor: C.background },
-  loader: { marginTop: 60 },
-  pdfBtn: {
-    backgroundColor: "rgba(255,255,255,0.2)", borderRadius: 8,
-    paddingHorizontal: 10, paddingVertical: 5,
-  },
-  pdfBtnText: { fontFamily: "Changa_600SemiBold", fontSize: 12, color: "#FFF" },
-  summaryStrip: {
-    flexDirection: "row", backgroundColor: C.card, borderRadius: 12,
-    padding: 14, borderWidth: 1, borderColor: C.border, alignItems: "center",
-  },
-  summaryItem: { flex: 1, alignItems: "center" },
-  summaryVal: { fontFamily: "Changa_700Bold", fontSize: 20, color: C.primary },
-  summaryLbl: { fontFamily: "Changa_400Regular", fontSize: 11, color: C.mutedForeground, marginTop: 2 },
-  summaryDiv: { width: 1, height: 36, backgroundColor: C.border },
-  scroll: { flex: 1 },
-  list: { padding: 12, gap: 8, paddingBottom: 24 },
-  card: {
-    backgroundColor: C.card, borderRadius: 12, padding: 14,
-    flexDirection: "row", alignItems: "center", gap: 12,
-    borderWidth: 1, borderColor: C.border,
-  },
-  iconBox: { width: 44, height: 44, borderRadius: 22, alignItems: "center", justifyContent: "center" },
-  icon: { fontSize: 22 },
-  cardBody: { flex: 1 },
-  txType: { fontFamily: "Changa_600SemiBold", fontSize: 14, color: C.foreground },
-  txCardType: { fontFamily: "Changa_400Regular", fontSize: 12, color: C.mutedForeground },
-  txDate: { fontFamily: "Changa_400Regular", fontSize: 11, color: C.mutedForeground, marginTop: 2 },
-  txAmount: { fontFamily: "Changa_700Bold", fontSize: 16 },
-  empty: { fontFamily: "Changa_400Regular", fontSize: 14, color: C.mutedForeground, textAlign: "center", marginTop: 60 },
-});
+function makeStyles(C: any) {
+  return StyleSheet.create({
+    screen: { flex: 1, backgroundColor: C.background },
+    loader: { marginTop: 60 },
+    pdfBtn: {
+      backgroundColor: "rgba(255,255,255,0.2)", borderRadius: 8,
+      paddingHorizontal: 10, paddingVertical: 5,
+    },
+    pdfBtnText: { fontFamily: "Changa_600SemiBold", fontSize: 12, color: "#FFF" },
+    summaryStrip: {
+      flexDirection: "row", backgroundColor: C.card, borderRadius: 12,
+      padding: 14, borderWidth: 1, borderColor: C.border, alignItems: "center",
+    },
+    summaryItem: { flex: 1, alignItems: "center" },
+    summaryVal: { fontFamily: "Changa_700Bold", fontSize: 20, color: C.primary },
+    summaryLbl: { fontFamily: "Changa_400Regular", fontSize: 11, color: C.mutedForeground, marginTop: 2 },
+    summaryDiv: { width: 1, height: 36, backgroundColor: C.border },
+    scroll: { flex: 1 },
+    list: { padding: 12, gap: 8, paddingBottom: 24 },
+    card: {
+      backgroundColor: C.card, borderRadius: 12, padding: 14,
+      flexDirection: "row", alignItems: "center", gap: 12,
+      borderWidth: 1, borderColor: C.border,
+    },
+    iconBox: { width: 44, height: 44, borderRadius: 22, alignItems: "center", justifyContent: "center" },
+    icon: { fontSize: 22 },
+    cardBody: { flex: 1 },
+    txType: { fontFamily: "Changa_600SemiBold", fontSize: 14, color: C.foreground },
+    txCardType: { fontFamily: "Changa_400Regular", fontSize: 12, color: C.mutedForeground },
+    txDate: { fontFamily: "Changa_400Regular", fontSize: 11, color: C.mutedForeground, marginTop: 2 },
+    txAmount: { fontFamily: "Changa_700Bold", fontSize: 16 },
+    empty: { fontFamily: "Changa_400Regular", fontSize: 14, color: C.mutedForeground, textAlign: "center", marginTop: 60 },
+  });
+}
