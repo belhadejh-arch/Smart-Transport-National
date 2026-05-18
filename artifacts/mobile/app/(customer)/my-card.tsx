@@ -1,21 +1,31 @@
-import React from "react";
+import React, { useCallback } from "react";
 import { View, Text, StyleSheet, TouchableOpacity, ActivityIndicator, ScrollView, Alert } from "react-native";
-import { router } from "expo-router";
+import { router, useFocusEffect } from "expo-router";
 import * as Clipboard from "expo-clipboard";
 import QRCode from "react-native-qrcode-svg";
-import { useGetCustomerCards } from "@workspace/api-client-react";
+import { useGetCustomerCards, useGetCustomerTransactions } from "@workspace/api-client-react";
 import { useLanguage } from "@/context/LanguageContext";
-import { useAuth } from "@/context/AuthContext";
 import { Header } from "@/components/Header";
 import { TabBar } from "@/components/TabBar";
 import colors from "@/constants/colors";
 
 export default function MyCard() {
   const { t } = useLanguage();
-  const { user } = useAuth();
   const C = colors.light;
-  const { data, isLoading } = useGetCustomerCards();
+
+  const { data, isLoading, refetch } = useGetCustomerCards();
+  const { data: txData, refetch: refetchTx } = useGetCustomerTransactions();
+
+  // Auto-refresh every time screen comes into focus
+  useFocusEffect(
+    useCallback(() => {
+      refetch();
+      refetchTx();
+    }, [])
+  );
+
   const card = data?.cards?.[0];
+  const lastRide = txData?.transactions?.find((tx: any) => tx.type === "ride");
 
   const tabs = [
     { key: "dashboard", icon: "🏠", label: t.customer.dashboard, onPress: () => router.replace("/(customer)/dashboard") },
@@ -67,6 +77,41 @@ export default function MyCard() {
               </View>
             )}
 
+            {/* Balance highlight + last deduction */}
+            {card.status === "active" && (
+              <View style={[styles.balanceCard, { borderColor: `${C.primary}30` }]}>
+                <View style={styles.balanceRow}>
+                  <View style={{ alignItems: "center", flex: 1 }}>
+                    <Text style={{ fontFamily: "Changa_400Regular", fontSize: 12, color: C.mutedForeground }}>
+                      {t.common.balance}
+                    </Text>
+                    <Text style={{ fontFamily: "Changa_700Bold", fontSize: 32, color: C.success }}>
+                      {Number(card.balance).toFixed(0)}
+                    </Text>
+                    <Text style={{ fontFamily: "Changa_500Medium", fontSize: 13, color: C.mutedForeground }}>
+                      {t.common.dinar}
+                    </Text>
+                  </View>
+                  {lastRide && (
+                    <View style={[styles.lastRideBadge, { backgroundColor: `${C.destructive}12`, borderColor: `${C.destructive}30` }]}>
+                      <Text style={{ fontFamily: "Changa_400Regular", fontSize: 10, color: C.mutedForeground }}>
+                        آخر رحلة
+                      </Text>
+                      <Text style={{ fontFamily: "Changa_700Bold", fontSize: 18, color: C.destructive }}>
+                        −{Number(lastRide.amount).toFixed(0)}
+                      </Text>
+                      <Text style={{ fontFamily: "Changa_400Regular", fontSize: 10, color: C.mutedForeground }}>
+                        {t.common.dinar}
+                      </Text>
+                    </View>
+                  )}
+                </View>
+                <TouchableOpacity style={styles.refreshBtn} onPress={() => { refetch(); refetchTx(); }}>
+                  <Text style={{ fontFamily: "Changa_600SemiBold", fontSize: 12, color: C.primary }}>🔄 تحديث الرصيد</Text>
+                </TouchableOpacity>
+              </View>
+            )}
+
             {/* Card info */}
             <View style={[styles.infoCard, { borderLeftColor: cardTypeColors[card.type] ?? C.primary, borderLeftWidth: 4 }]}>
               <View style={styles.infoRow}>
@@ -76,7 +121,7 @@ export default function MyCard() {
                 </Text>
               </View>
 
-              {/* Card number row with copy button */}
+              {/* Card number with copy */}
               <View style={styles.infoRow}>
                 <Text style={styles.infoLabel}>{t.customer.cardNumber}</Text>
                 <View style={styles.cardNumberRow}>
@@ -89,15 +134,11 @@ export default function MyCard() {
                 </View>
               </View>
 
-              <View style={styles.infoRow}>
-                <Text style={styles.infoLabel}>{t.common.balance}</Text>
-                <Text style={[styles.infoValue, { color: C.success, fontSize: 18 }]}>
-                  {Number(card.balance).toFixed(0)} {t.common.dinar}
-                </Text>
-              </View>
               <View style={[styles.infoRow, { borderBottomWidth: 0 }]}>
                 <Text style={styles.infoLabel}>{t.common.status}</Text>
-                <Text style={[styles.infoValue, { color: card.status === "active" ? C.success : C.warning }]}>{card.status}</Text>
+                <Text style={[styles.infoValue, { color: card.status === "active" ? C.success : C.warning }]}>
+                  {card.status === "active" ? "✅ مفعّلة" : "⏳ " + card.status}
+                </Text>
               </View>
             </View>
           </>
@@ -119,7 +160,7 @@ export default function MyCard() {
 const C = colors.light;
 const styles = StyleSheet.create({
   screen: { flex: 1, backgroundColor: C.background },
-  content: { padding: 20, alignItems: "center", gap: 20, paddingBottom: 40 },
+  content: { padding: 20, alignItems: "center", gap: 16, paddingBottom: 40 },
   qrContainer: { alignItems: "center", gap: 12 },
   qrBox: {
     backgroundColor: "#FFF", padding: 20, borderRadius: 24,
@@ -134,11 +175,30 @@ const styles = StyleSheet.create({
   },
   pendingIcon: { fontSize: 56 },
   pendingText: { fontFamily: "Changa_600SemiBold", fontSize: 16, color: C.warning, textAlign: "center" },
+
+  balanceCard: {
+    width: "100%", backgroundColor: C.card, borderRadius: 20,
+    borderWidth: 1, padding: 18, gap: 12,
+  },
+  balanceRow: { flexDirection: "row", alignItems: "center", justifyContent: "space-between" },
+  lastRideBadge: {
+    flex: 1, alignItems: "center", borderRadius: 14,
+    borderWidth: 1, paddingVertical: 12, paddingHorizontal: 8, marginLeft: 12,
+  },
+  refreshBtn: {
+    alignSelf: "center", paddingVertical: 6, paddingHorizontal: 18,
+    borderRadius: 20, backgroundColor: `${C.primary}12`,
+    borderWidth: 1, borderColor: `${C.primary}30`,
+  },
+
   infoCard: {
     backgroundColor: C.card, borderRadius: 16, padding: 16, width: "100%",
     borderWidth: 1, borderColor: C.border,
   },
-  infoRow: { flexDirection: "row", justifyContent: "space-between", alignItems: "center", paddingVertical: 10, borderBottomWidth: 1, borderBottomColor: C.border },
+  infoRow: {
+    flexDirection: "row", justifyContent: "space-between", alignItems: "center",
+    paddingVertical: 10, borderBottomWidth: 1, borderBottomColor: C.border,
+  },
   infoLabel: { fontFamily: "Changa_500Medium", fontSize: 14, color: C.mutedForeground },
   infoValue: { fontFamily: "Changa_700Bold", fontSize: 15, color: C.foreground },
   cardNumberRow: { flexDirection: "row", alignItems: "center", gap: 8 },

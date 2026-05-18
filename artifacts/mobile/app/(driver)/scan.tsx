@@ -1,7 +1,7 @@
-import React, { useState, useCallback, useRef } from "react";
+import React, { useState, useCallback, useRef, useEffect } from "react";
 import {
   View, Text, TouchableOpacity, Modal, ActivityIndicator,
-  TextInput, KeyboardAvoidingView, Platform,
+  TextInput, KeyboardAvoidingView, Platform, Animated,
 } from "react-native";
 import { CameraView, useCameraPermissions } from "expo-camera";
 import { router } from "expo-router";
@@ -11,6 +11,7 @@ import { useLanguage } from "@/context/LanguageContext";
 import { useTheme } from "@/context/ThemeContext";
 import { Header } from "@/components/Header";
 import { TabBar } from "@/components/TabBar";
+import { Sounds } from "@/utils/sounds";
 
 export default function DriverScan() {
   const { t } = useLanguage();
@@ -39,13 +40,21 @@ export default function DriverScan() {
     cooldown.current = true;
     setProcessing(true);
     setShowManual(false);
+
+    // Scan beep
+    Sounds.scan();
+    if (Platform.OS !== "web") Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+
     try {
-      if (Platform.OS !== "web") Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
       const res = await scan({ data: { cardNumber: cn } });
       setResult(res);
       setShowResult(true);
+      // Success sound + haptic
+      Sounds.success();
       if (Platform.OS !== "web") Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
     } catch (e: any) {
+      // Error sound + haptic
+      Sounds.error();
       if (Platform.OS !== "web") Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
       setResult({ success: false, error: e?.message ?? t.driver.invalidCard });
       setShowResult(true);
@@ -69,7 +78,6 @@ export default function DriverScan() {
     setScanned(false);
   }
 
-  /* ── Camera permission ── */
   if (!permission) {
     return (
       <View style={{ flex: 1, backgroundColor: C.background }}>
@@ -111,23 +119,19 @@ export default function DriverScan() {
     );
   }
 
-  /* ── Camera scanner ── */
   return (
     <View style={{ flex: 1, backgroundColor: "#000" }}>
       <Header title={t.driver.scanTitle} />
-
       <View style={{ flex: 1, position: "relative" }}>
         <CameraView
           style={{ flex: 1 }}
           barcodeScannerSettings={{ barcodeTypes: ["qr"] }}
           onBarcodeScanned={scanned ? undefined : handleBarCodeScanned}
         >
-          {/* Dark overlay with scan window */}
           <View style={{ flex: 1 }}>
             <View style={{ flex: 1, backgroundColor: "rgba(0,0,0,0.55)" }} />
             <View style={{ flexDirection: "row", height: 260 }}>
               <View style={{ flex: 1, backgroundColor: "rgba(0,0,0,0.55)" }} />
-              {/* Scan box */}
               <View style={{ width: 260, height: 260 }}>
                 <View style={{ position: "absolute", top: 0, left: 0, width: 32, height: 32, borderColor: "#D4A24E", borderTopWidth: 4, borderLeftWidth: 4, borderTopLeftRadius: 8 }} />
                 <View style={{ position: "absolute", top: 0, right: 0, width: 32, height: 32, borderColor: "#D4A24E", borderTopWidth: 4, borderRightWidth: 4, borderTopRightRadius: 8 }} />
@@ -142,7 +146,6 @@ export default function DriverScan() {
               </View>
               <View style={{ flex: 1, backgroundColor: "rgba(0,0,0,0.55)" }} />
             </View>
-            {/* Bottom info */}
             <View style={{ flex: 1, backgroundColor: "rgba(0,0,0,0.55)", alignItems: "center", justifyContent: "center", gap: 16, paddingHorizontal: 32 }}>
               <Text style={{ fontFamily: "Changa_500Medium", fontSize: 15, color: "#FFF", textAlign: "center" }}>
                 {processing ? "جاري خصم الأجرة..." : "وجّه الكاميرا نحو رمز QR للراكب"}
@@ -201,35 +204,95 @@ function ManualModal({ visible, value, onChange, onSubmit, onClose, processing, 
 
 function ResultModal({ visible, result, onClose, C, t }: any) {
   const success = result?.success;
+  const scaleAnim = useRef(new Animated.Value(0)).current;
+
+  useEffect(() => {
+    if (visible) {
+      Animated.spring(scaleAnim, {
+        toValue: 1,
+        useNativeDriver: true,
+        tension: 120,
+        friction: 8,
+      }).start();
+    } else {
+      scaleAnim.setValue(0);
+    }
+  }, [visible]);
+
+  // Old balance = new balance + fare (since fare was deducted)
+  const oldBalance = success ? (Number(result?.cardBalance ?? 0) + Number(result?.fareAmount ?? 0)) : 0;
+
   return (
-    <Modal visible={visible} animationType="slide" transparent onRequestClose={onClose}>
-      <View style={{ flex: 1, backgroundColor: "rgba(0,0,0,0.6)", justifyContent: "flex-end" }}>
-        <View style={{ backgroundColor: C.card, borderTopLeftRadius: 28, borderTopRightRadius: 28, padding: 28, paddingBottom: 44, gap: 16, alignItems: "center" }}>
-          <View style={{ width: 76, height: 76, borderRadius: 38, backgroundColor: success ? C.success : C.destructive, alignItems: "center", justifyContent: "center" }}>
-            <Text style={{ fontSize: 38, color: "#FFF" }}>{success ? "✓" : "✗"}</Text>
+    <Modal visible={visible} animationType="fade" transparent onRequestClose={onClose}>
+      <View style={{ flex: 1, backgroundColor: "rgba(0,0,0,0.65)", justifyContent: "flex-end" }}>
+        <Animated.View style={{
+          backgroundColor: C.card,
+          borderTopLeftRadius: 32, borderTopRightRadius: 32,
+          padding: 28, paddingBottom: 48, gap: 18, alignItems: "center",
+          transform: [{ scale: scaleAnim }],
+        }}>
+          {/* Icon */}
+          <View style={{
+            width: 84, height: 84, borderRadius: 42,
+            backgroundColor: success ? C.success : C.destructive,
+            alignItems: "center", justifyContent: "center",
+            shadowColor: success ? C.success : C.destructive,
+            shadowOffset: { width: 0, height: 6 },
+            shadowOpacity: 0.4, shadowRadius: 12, elevation: 8,
+          }}>
+            <Text style={{ fontSize: 40 }}>{success ? "✓" : "✗"}</Text>
           </View>
-          <Text style={{ fontFamily: "Changa_700Bold", fontSize: 20, color: C.foreground, textAlign: "center" }}>
+
+          <Text style={{ fontFamily: "Changa_700Bold", fontSize: 22, color: C.foreground, textAlign: "center" }}>
             {success ? t.driver.fareDeducted : (result?.error ?? t.driver.invalidCard)}
           </Text>
+
           {success && (
-            <View style={{ width: "100%", backgroundColor: C.muted, borderRadius: 14, overflow: "hidden" }}>
-              {[
-                { label: t.customer?.cardTypes?.[result.cardType] ?? result.cardType, value: `${result.fareAmount} دج`, color: C.foreground },
-                { label: t.driver.driverEarning, value: `+${result.driverEarning} دج`, color: C.success },
-                { label: t.driver.platformFee, value: `${result.platformFee} دج`, color: C.mutedForeground },
-                { label: t.driver.cardBalance, value: `${result.cardBalance} دج`, color: C.primary },
-              ].map((row, i, arr) => (
-                <View key={row.label} style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "center", padding: 14, borderBottomWidth: i < arr.length - 1 ? 1 : 0, borderBottomColor: C.border }}>
-                  <Text style={{ fontFamily: "Changa_500Medium", fontSize: 13, color: C.mutedForeground }}>{row.label}</Text>
-                  <Text style={{ fontFamily: "Changa_700Bold", fontSize: 15, color: row.color }}>{row.value}</Text>
+            <View style={{ width: "100%", gap: 6 }}>
+              {/* Balance flow: before → deducted → after */}
+              <View style={{ backgroundColor: `${C.primary}12`, borderRadius: 16, padding: 16, gap: 0, borderWidth: 1, borderColor: `${C.primary}25` }}>
+                <Text style={{ fontFamily: "Changa_600SemiBold", fontSize: 12, color: C.mutedForeground, textAlign: "center", marginBottom: 10 }}>
+                  حركة رصيد البطاقة
+                </Text>
+                <View style={{ flexDirection: "row", alignItems: "center", justifyContent: "space-between" }}>
+                  <View style={{ alignItems: "center", flex: 1 }}>
+                    <Text style={{ fontFamily: "Changa_400Regular", fontSize: 11, color: C.mutedForeground }}>قبل</Text>
+                    <Text style={{ fontFamily: "Changa_700Bold", fontSize: 18, color: C.foreground }}>{oldBalance} دج</Text>
+                  </View>
+                  <View style={{ alignItems: "center", flex: 1 }}>
+                    <Text style={{ fontFamily: "Changa_700Bold", fontSize: 22, color: C.destructive }}>−{result.fareAmount}</Text>
+                    <Text style={{ fontFamily: "Changa_400Regular", fontSize: 10, color: C.mutedForeground }}>الأجرة</Text>
+                  </View>
+                  <View style={{ alignItems: "center", flex: 1 }}>
+                    <Text style={{ fontFamily: "Changa_400Regular", fontSize: 11, color: C.mutedForeground }}>بعد</Text>
+                    <Text style={{ fontFamily: "Changa_700Bold", fontSize: 18, color: C.success }}>{result.cardBalance} دج</Text>
+                  </View>
                 </View>
-              ))}
+              </View>
+
+              {/* Driver earnings row */}
+              <View style={{ backgroundColor: C.muted, borderRadius: 14, overflow: "hidden" }}>
+                {[
+                  { label: "🎫 نوع البطاقة", value: t.customer?.cardTypes?.[result.cardType] ?? result.cardType, color: C.foreground },
+                  { label: "💼 أجرتك", value: `+${result.driverEarning} دج`, color: C.success },
+                  { label: "🏛️ رسوم المنصة", value: `${result.platformFee} دج`, color: C.mutedForeground },
+                ].map((row, i, arr) => (
+                  <View key={row.label} style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "center", padding: 13, borderBottomWidth: i < arr.length - 1 ? 1 : 0, borderBottomColor: C.border }}>
+                    <Text style={{ fontFamily: "Changa_500Medium", fontSize: 13, color: C.mutedForeground }}>{row.label}</Text>
+                    <Text style={{ fontFamily: "Changa_700Bold", fontSize: 15, color: row.color }}>{row.value}</Text>
+                  </View>
+                ))}
+              </View>
             </View>
           )}
-          <TouchableOpacity style={{ backgroundColor: C.primary, borderRadius: 14, padding: 15, width: "100%", alignItems: "center" }} onPress={onClose}>
-            <Text style={{ fontFamily: "Changa_700Bold", fontSize: 16, color: "#FFF" }}>{t.common.close}</Text>
+
+          <TouchableOpacity
+            style={{ backgroundColor: success ? C.primary : C.destructive, borderRadius: 16, padding: 16, width: "100%", alignItems: "center", shadowColor: C.primary, shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.25, shadowRadius: 8, elevation: 4 }}
+            onPress={onClose}
+          >
+            <Text style={{ fontFamily: "Changa_700Bold", fontSize: 17, color: "#FFF" }}>{t.common.close}</Text>
           </TouchableOpacity>
-        </View>
+        </Animated.View>
       </View>
     </Modal>
   );

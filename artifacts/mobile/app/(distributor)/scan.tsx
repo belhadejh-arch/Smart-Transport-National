@@ -1,15 +1,17 @@
-import React, { useState, useCallback, useRef } from "react";
+import React, { useState, useCallback, useRef, useEffect } from "react";
 import {
   View, Text, TouchableOpacity, Modal, ActivityIndicator,
-  ScrollView, TextInput, KeyboardAvoidingView, Platform,
+  ScrollView, TextInput, KeyboardAvoidingView, Platform, Animated,
 } from "react-native";
 import { CameraView, useCameraPermissions } from "expo-camera";
 import { router } from "expo-router";
+import * as Haptics from "expo-haptics";
 import { useDistributorScanCard } from "@workspace/api-client-react";
 import { useLanguage } from "@/context/LanguageContext";
 import { useTheme } from "@/context/ThemeContext";
 import { Header } from "@/components/Header";
 import { TabBar } from "@/components/TabBar";
+import { Sounds } from "@/utils/sounds";
 
 const AMOUNTS = [
   { value: 100,   profit: 5 },
@@ -70,11 +72,18 @@ export default function DistributorScan() {
     if (!selectedAmount || processing) return;
     setShowAmountModal(false);
     setProcessing(true);
+    // Scan beep on confirm
+    Sounds.scan();
+    if (Platform.OS !== "web") Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
     try {
       const res = await scan({ data: { cardNumber: scannedCard, amount: selectedAmount.value } });
       setResult({ ...res, profit: res.profit ?? selectedAmount.profit });
       setShowResult(true);
+      Sounds.success();
+      if (Platform.OS !== "web") Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
     } catch (e: any) {
+      Sounds.error();
+      if (Platform.OS !== "web") Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
       setResult({ success: false, error: e?.message ?? t.distributor.insufficientBalance });
       setShowResult(true);
     } finally {
@@ -281,35 +290,91 @@ function AmountModal({ visible, selected, onSelect, onConfirm, onCancel, process
 /* ─── Result Modal ─── */
 function ResultModal({ visible, result, onClose, C }: any) {
   const success = result?.success;
+  const scaleAnim = useRef(new Animated.Value(0)).current;
+
+  useEffect(() => {
+    if (visible) {
+      Animated.spring(scaleAnim, {
+        toValue: 1,
+        useNativeDriver: true,
+        tension: 120,
+        friction: 8,
+      }).start();
+    } else {
+      scaleAnim.setValue(0);
+    }
+  }, [visible]);
+
   return (
-    <Modal visible={visible} animationType="slide" transparent onRequestClose={onClose}>
-      <View style={{ flex: 1, backgroundColor: "rgba(0,0,0,0.6)", justifyContent: "flex-end" }}>
-        <View style={{ backgroundColor: C.card, borderTopLeftRadius: 28, borderTopRightRadius: 28, padding: 28, paddingBottom: 44, gap: 16, alignItems: "center" }}>
-          <View style={{ width: 80, height: 80, borderRadius: 40, backgroundColor: success ? C.success : C.destructive, alignItems: "center", justifyContent: "center" }}>
-            <Text style={{ fontSize: 40, color: "#FFF" }}>{success ? "✓" : "✗"}</Text>
+    <Modal visible={visible} animationType="fade" transparent onRequestClose={onClose}>
+      <View style={{ flex: 1, backgroundColor: "rgba(0,0,0,0.65)", justifyContent: "flex-end" }}>
+        <Animated.View style={{
+          backgroundColor: C.card,
+          borderTopLeftRadius: 32, borderTopRightRadius: 32,
+          padding: 28, paddingBottom: 48, gap: 18, alignItems: "center",
+          transform: [{ scale: scaleAnim }],
+        }}>
+          {/* Icon */}
+          <View style={{
+            width: 84, height: 84, borderRadius: 42,
+            backgroundColor: success ? C.success : C.destructive,
+            alignItems: "center", justifyContent: "center",
+            shadowColor: success ? C.success : C.destructive,
+            shadowOffset: { width: 0, height: 6 },
+            shadowOpacity: 0.45, shadowRadius: 14, elevation: 10,
+          }}>
+            <Text style={{ fontSize: 40 }}>{success ? "✓" : "✗"}</Text>
           </View>
+
           <Text style={{ fontFamily: "Changa_700Bold", fontSize: 22, color: C.foreground, textAlign: "center" }}>
             {success ? "✅ تم الشحن بنجاح" : (result?.error ?? "فشل الشحن")}
           </Text>
+
           {success && (
-            <View style={{ width: "100%", backgroundColor: C.muted, borderRadius: 14, overflow: "hidden" }}>
-              {[
-                { label: "💳 المبلغ المشحون", value: `+${result.amount} دج`, color: C.success },
-                { label: "💼 رصيد المستخدم الجديد", value: `${result.cardBalance} دج`, color: C.primary },
-                { label: "💰 ربحك من هذه العملية", value: `+${result.profit} دج`, color: C.accent },
-                { label: "🏦 رصيدك المتبقي", value: `${result.distributorBalance} دج`, color: C.foreground },
-              ].map((row, i, arr) => (
-                <View key={row.label} style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "center", padding: 14, borderBottomWidth: i < arr.length - 1 ? 1 : 0, borderBottomColor: C.border }}>
-                  <Text style={{ fontFamily: "Changa_500Medium", fontSize: 13, color: C.mutedForeground }}>{row.label}</Text>
-                  <Text style={{ fontFamily: "Changa_700Bold", fontSize: 15, color: row.color }}>{row.value}</Text>
+            <View style={{ width: "100%", gap: 8 }}>
+              {/* Balance transfer flow */}
+              <View style={{ backgroundColor: `${C.success}12`, borderRadius: 16, padding: 16, borderWidth: 1, borderColor: `${C.success}30` }}>
+                <Text style={{ fontFamily: "Changa_600SemiBold", fontSize: 11, color: C.mutedForeground, textAlign: "center", marginBottom: 10 }}>
+                  انتقال الرصيد
+                </Text>
+                <View style={{ flexDirection: "row", alignItems: "center", justifyContent: "space-between" }}>
+                  <View style={{ alignItems: "center", flex: 1 }}>
+                    <Text style={{ fontFamily: "Changa_400Regular", fontSize: 11, color: C.mutedForeground }}>رصيدك</Text>
+                    <Text style={{ fontFamily: "Changa_700Bold", fontSize: 16, color: C.destructive }}>−{result.amount}</Text>
+                    <Text style={{ fontFamily: "Changa_400Regular", fontSize: 10, color: C.mutedForeground }}>دج</Text>
+                  </View>
+                  <Text style={{ fontSize: 22, color: C.success }}>→</Text>
+                  <View style={{ alignItems: "center", flex: 1 }}>
+                    <Text style={{ fontFamily: "Changa_400Regular", fontSize: 11, color: C.mutedForeground }}>للمستخدم</Text>
+                    <Text style={{ fontFamily: "Changa_700Bold", fontSize: 16, color: C.success }}>+{result.amount}</Text>
+                    <Text style={{ fontFamily: "Changa_400Regular", fontSize: 10, color: C.mutedForeground }}>دج</Text>
+                  </View>
                 </View>
-              ))}
+              </View>
+
+              {/* Details rows */}
+              <View style={{ backgroundColor: C.muted, borderRadius: 14, overflow: "hidden" }}>
+                {[
+                  { label: "💼 رصيد المستخدم الجديد", value: `${result.cardBalance} دج`, color: C.primary },
+                  { label: "💰 ربحك من العملية", value: `+${result.profit} دج`, color: C.accent },
+                  { label: "🏦 رصيدك المتبقي", value: `${result.distributorBalance} دج`, color: C.foreground },
+                ].map((row, i, arr) => (
+                  <View key={row.label} style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "center", padding: 14, borderBottomWidth: i < arr.length - 1 ? 1 : 0, borderBottomColor: C.border }}>
+                    <Text style={{ fontFamily: "Changa_500Medium", fontSize: 13, color: C.mutedForeground }}>{row.label}</Text>
+                    <Text style={{ fontFamily: "Changa_700Bold", fontSize: 15, color: row.color }}>{row.value}</Text>
+                  </View>
+                ))}
+              </View>
             </View>
           )}
-          <TouchableOpacity style={{ backgroundColor: C.primary, borderRadius: 14, padding: 15, width: "100%", alignItems: "center" }} onPress={onClose}>
-            <Text style={{ fontFamily: "Changa_700Bold", fontSize: 16, color: "#FFF" }}>إغلاق</Text>
+
+          <TouchableOpacity
+            style={{ backgroundColor: success ? C.primary : C.destructive, borderRadius: 16, padding: 16, width: "100%", alignItems: "center", shadowColor: success ? C.primary : C.destructive, shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.3, shadowRadius: 8, elevation: 4 }}
+            onPress={onClose}
+          >
+            <Text style={{ fontFamily: "Changa_700Bold", fontSize: 17, color: "#FFF" }}>إغلاق</Text>
           </TouchableOpacity>
-        </View>
+        </Animated.View>
       </View>
     </Modal>
   );
