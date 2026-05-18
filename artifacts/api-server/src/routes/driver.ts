@@ -69,20 +69,23 @@ router.post("/scan", async (req: AuthRequest, res) => {
       return;
     }
 
-    // Deduct from card balance
-    await db.execute(sql`UPDATE cards SET balance = balance - ${fare} WHERE id = ${card.id}`);
-    // Add to driver balance
-    await db.execute(sql`UPDATE users SET balance = balance + ${driverEarning} WHERE id = ${req.userId!}`);
+    const newCardBalance = cardBalance - fare;
+    const [driver] = await db.select({ balance: usersTable.balance }).from(usersTable).where(eq(usersTable.id, req.userId!)).limit(1);
+    const newDriverBalance = Number(driver?.balance ?? 0) + driverEarning;
 
-    // Record transaction
-    await db.insert(transactionsTable).values({
-      cardId: card.id,
-      driverId: req.userId!,
-      amount: String(fare),
-      platformFee: String(platformFee),
-      driverEarning: String(driverEarning),
-      type: "ride",
-      cardType: card.type,
+    // Atomic transaction — card deduction and driver credit succeed or fail together
+    await db.transaction(async (tx) => {
+      await tx.execute(sql`UPDATE cards SET balance = ${newCardBalance} WHERE id = ${card.id}`);
+      await tx.execute(sql`UPDATE users SET balance = ${newDriverBalance} WHERE id = ${req.userId!}`);
+      await tx.insert(transactionsTable).values({
+        cardId: card.id,
+        driverId: req.userId!,
+        amount: String(fare),
+        platformFee: String(platformFee),
+        driverEarning: String(driverEarning),
+        type: "ride",
+        cardType: card.type,
+      });
     });
 
     res.json({

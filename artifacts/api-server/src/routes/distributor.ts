@@ -82,33 +82,31 @@ router.post("/scan", async (req: AuthRequest, res) => {
     }
 
     const profit = PROFITS[Number(amount)] ?? 0;
+    const newCardBalance = Number(card.balance) + amount;
+    const newDistBalance = Number(distributor.balance) - amount;
 
-    // Deduct full amount from distributor balance
-    await db.execute(sql`UPDATE users SET balance = balance - ${amount} WHERE id = ${req.userId!}`);
-    // Add full amount to customer card
-    await db.execute(sql`UPDATE cards SET balance = balance + ${amount} WHERE id = ${card.id}`);
-
-    // Record transaction — profit stored in driverEarning field
-    await db.insert(transactionsTable).values({
-      cardId: card.id,
-      distributorId: req.userId!,
-      amount: String(amount),
-      platformFee: "0",
-      driverEarning: String(profit),
-      type: "topup",
-      cardType: card.type,
+    // Atomic transaction — both updates succeed or both fail
+    await db.transaction(async (tx) => {
+      await tx.execute(sql`UPDATE users SET balance = ${newDistBalance} WHERE id = ${req.userId!}`);
+      await tx.execute(sql`UPDATE cards SET balance = ${newCardBalance} WHERE id = ${card.id}`);
+      await tx.insert(transactionsTable).values({
+        cardId: card.id,
+        distributorId: req.userId!,
+        amount: String(amount),
+        platformFee: "0",
+        driverEarning: String(profit),
+        type: "topup",
+        cardType: card.type,
+      });
     });
-
-    const [updatedCard] = await db.select().from(cardsTable).where(eq(cardsTable.id, card.id)).limit(1);
-    const [updatedDist] = await db.select().from(usersTable).where(eq(usersTable.id, req.userId!)).limit(1);
 
     res.json({
       success: true,
       cardType: card.type,
       amount,
       profit,
-      cardBalance: Number(updatedCard.balance),
-      distributorBalance: Number(updatedDist.balance),
+      cardBalance: newCardBalance,
+      distributorBalance: newDistBalance,
       message: `${amount} DZD added to card. Your profit: ${profit} DZD`,
     });
   } catch (err) {
