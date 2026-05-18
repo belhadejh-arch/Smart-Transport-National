@@ -8,6 +8,7 @@ import { useLanguage } from "@/context/LanguageContext";
 import { Header } from "@/components/Header";
 import { TabBar } from "@/components/TabBar";
 import colors from "@/constants/colors";
+import { Sounds } from "@/utils/sounds";
 
 export default function MyCard() {
   const { t } = useLanguage();
@@ -44,7 +45,14 @@ export default function MyCard() {
   async function copyCardNumber() {
     if (!card?.cardNumber) return;
     await Clipboard.setStringAsync(card.cardNumber);
+    Sounds.tap();
     Alert.alert("✓", "تم نسخ رقم البطاقة");
+  }
+
+  function handleRefresh() {
+    Sounds.scan();
+    refetch();
+    refetchTx();
   }
 
   return (
@@ -106,7 +114,7 @@ export default function MyCard() {
                     </View>
                   )}
                 </View>
-                <TouchableOpacity style={styles.refreshBtn} onPress={() => { refetch(); refetchTx(); }}>
+                <TouchableOpacity style={styles.refreshBtn} onPress={handleRefresh}>
                   <Text style={{ fontFamily: "Changa_600SemiBold", fontSize: 12, color: C.primary }}>🔄 تحديث الرصيد</Text>
                 </TouchableOpacity>
               </View>

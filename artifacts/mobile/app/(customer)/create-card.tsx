@@ -9,6 +9,7 @@ import { useCreateCard } from "@workspace/api-client-react";
 import { useLanguage } from "@/context/LanguageContext";
 import { useTheme } from "@/context/ThemeContext";
 import { Header } from "@/components/Header";
+import { Sounds } from "@/utils/sounds";
 
 type CardType = "standard" | "student" | "employee" | "special_needs";
 
@@ -172,16 +173,16 @@ export default function CreateCard() {
           disabilityCertUrl: type === "special_needs" && specialDoc ? toDataUri(specialDoc) : undefined,
         },
       });
+      Sounds.success();
       if (type === "standard") {
-        // Standard card: active immediately — go straight to my-card
         router.replace("/(customer)/my-card");
       } else {
-        // Other cards: pending admin approval
         Alert.alert(t.common.success, t.customer.pendingApproval, [
           { text: t.common.confirm, onPress: () => router.replace("/(customer)/my-card") },
         ]);
       }
     } catch (e: any) {
+      Sounds.error();
       Alert.alert(t.common.error, e?.message ?? t.common.error);
     }
   }
