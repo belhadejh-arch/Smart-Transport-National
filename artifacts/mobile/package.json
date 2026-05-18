@@ -59,6 +59,7 @@
     "@expo-google-fonts/changa": "^0.4.2",
     "expo-av": "^16.0.8",
     "expo-camera": "^17.0.10",
+    "expo-document-picker": "^55.0.13",
     "react-native-qrcode-svg": "^6.3.21",
     "react-native-toast-message": "^2.3.3"
   }
