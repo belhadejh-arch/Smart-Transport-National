@@ -103,6 +103,10 @@ export default function LoginScreen() {
             )}
           </TouchableOpacity>
 
+          <TouchableOpacity onPress={() => router.push("/forgot-password")} style={styles.forgotLink}>
+            <Text style={styles.forgotLinkText}>🔑 نسيت كلمة المرور؟</Text>
+          </TouchableOpacity>
+
           <TouchableOpacity onPress={() => router.replace("/register")} style={styles.registerLink}>
             <Text style={styles.registerLinkText}>
               {t.auth.noAccount} <Text style={styles.registerLinkBold}>{t.auth.registerHere}</Text>
@@ -152,7 +156,9 @@ function makeStyles(C: any) {
       shadowOpacity: 0.35, shadowRadius: 8, elevation: 6,
     },
     loginBtnText: { fontFamily: "Changa_700Bold", fontSize: 18, color: "#FFF" },
-    registerLink: { marginTop: 16, alignItems: "center" },
+    forgotLink: { marginTop: 14, alignItems: "center", paddingVertical: 4 },
+    forgotLinkText: { fontFamily: "Changa_500Medium", fontSize: 14, color: C.primary },
+    registerLink: { marginTop: 8, alignItems: "center" },
     registerLinkText: { fontFamily: "Changa_400Regular", fontSize: 14, color: C.mutedForeground },
     registerLinkBold: { fontFamily: "Changa_600SemiBold", color: C.primary },
   });
