@@ -11,7 +11,10 @@ import { useLanguage } from "@/context/LanguageContext";
 import { useTheme } from "@/context/ThemeContext";
 import { Header } from "@/components/Header";
 import { TabBar } from "@/components/TabBar";
+import { WebQRScanner } from "@/components/WebQRScanner";
 import { Sounds } from "@/utils/sounds";
+
+const IS_WEB = Platform.OS === "web";
 
 export default function DriverScan() {
   const { t } = useLanguage();
@@ -26,8 +29,9 @@ export default function DriverScan() {
   const { mutateAsync: scan } = useDriverScanCard();
   const cooldown = useRef(false);
 
-  // Auto-request permission on mount
+  // Auto-request permission on mount (native only; web uses html5-qrcode which requests internally)
   useEffect(() => {
+    if (IS_WEB) return;
     if (permission && !permission.granted && permission.canAskAgain) {
       requestPermission();
     }
@@ -85,8 +89,8 @@ export default function DriverScan() {
     setScanned(false);
   }
 
-  // Permission screen - shown until user grants camera access
-  if (!permission?.granted) {
+  // Permission screen - shown until user grants camera access (native only)
+  if (!IS_WEB && !permission?.granted) {
     return (
       <View style={{ flex: 1, backgroundColor: C.background }}>
         <Header title={t.driver.scanTitle} />
@@ -121,11 +125,19 @@ export default function DriverScan() {
     <View style={{ flex: 1, backgroundColor: "#000" }}>
       <Header title={t.driver.scanTitle} />
       <View style={{ flex: 1, position: "relative" }}>
-        <CameraView
-          style={{ flex: 1 }}
-          barcodeScannerSettings={{ barcodeTypes: ["qr"] }}
-          onBarcodeScanned={scanned ? undefined : handleBarCodeScanned}
-        >
+        {IS_WEB ? (
+          <WebQRScanner
+            paused={scanned || processing}
+            onScan={(data) => handleBarCodeScanned({ data })}
+          />
+        ) : (
+          <CameraView
+            style={{ position: "absolute", top: 0, left: 0, right: 0, bottom: 0 }}
+            barcodeScannerSettings={{ barcodeTypes: ["qr"] }}
+            onBarcodeScanned={scanned ? undefined : handleBarCodeScanned}
+          />
+        )}
+        <View pointerEvents="box-none" style={{ position: "absolute", top: 0, left: 0, right: 0, bottom: 0 }}>
           <View style={{ flex: 1 }}>
             <View style={{ flex: 1, backgroundColor: "rgba(0,0,0,0.55)" }} />
             <View style={{ flexDirection: "row", height: 260 }}>
@@ -156,7 +168,7 @@ export default function DriverScan() {
               </TouchableOpacity>
             </View>
           </View>
-        </CameraView>
+        </View>
       </View>
 
       <TabBar tabs={tabs} activeKey="scan" />
