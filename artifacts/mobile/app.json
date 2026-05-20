@@ -34,7 +34,14 @@
       ]
     },
     "web": {
-      "favicon": "./assets/images/icon.png"
+      "favicon": "./assets/images/icon.png",
+      "output": "single",
+      "name": "NQL DZ — منصة النقل الذكية في الجزائر",
+      "shortName": "NQL DZ",
+      "description": "NQL DZ — المنصة الوطنية الذكية للنقل في الجزائر. ادفع رحلاتك ببطاقة QR ذكية، تابع رصيدك، واشحن من أقرب موزع.",
+      "lang": "ar",
+      "themeColor": "#2C6B7F",
+      "backgroundColor": "#ffffff"
     },
     "plugins": [
       [
