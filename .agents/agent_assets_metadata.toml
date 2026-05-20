@@ -11,3 +11,9 @@ id = "POmYJomrspYgJ__cHCowl"
 uri = "file://nql-dz-app.zip"
 type = "unspecified"
 title = "NQL DZ — كامل المشروع"
+
+[[outputs]]
+id = "zRZN65_OT4a8ide-jb2aE"
+uri = "file://nqldz-web-dist.tar.gz"
+type = "unspecified"
+title = "NQL DZ - Web Build (dist)"
