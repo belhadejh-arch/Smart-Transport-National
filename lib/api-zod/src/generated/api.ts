@@ -207,6 +207,14 @@ export const ResetUserPasswordResponse = zod.object({
 });
 
 /**
+ * @summary Reset platform earnings counter to zero (main admin only)
+ */
+export const ResetPlatformEarningsResponse = zod.object({
+  success: zod.boolean(),
+  message: zod.string().optional(),
+});
+
+/**
  * @summary Reset user balance to zero (main admin only)
  */
 export const ResetUserBalanceParams = zod.object({

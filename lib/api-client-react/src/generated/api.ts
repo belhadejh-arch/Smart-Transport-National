@@ -991,6 +991,87 @@ export const useResetUserPassword = <
 };
 
 /**
+ * @summary Reset platform earnings counter to zero (main admin only)
+ */
+export const getResetPlatformEarningsUrl = () => {
+  return `/api/admin/reset-platform-earnings`;
+};
+
+export const resetPlatformEarnings = async (
+  options?: RequestInit,
+): Promise<SuccessResponse> => {
+  return customFetch<SuccessResponse>(getResetPlatformEarningsUrl(), {
+    ...options,
+    method: "POST",
+  });
+};
+
+export const getResetPlatformEarningsMutationOptions = <
+  TError = ErrorType<unknown>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof resetPlatformEarnings>>,
+    TError,
+    void,
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationOptions<
+  Awaited<ReturnType<typeof resetPlatformEarnings>>,
+  TError,
+  void,
+  TContext
+> => {
+  const mutationKey = ["resetPlatformEarnings"];
+  const { mutation: mutationOptions, request: requestOptions } = options
+    ? options.mutation &&
+      "mutationKey" in options.mutation &&
+      options.mutation.mutationKey
+      ? options
+      : { ...options, mutation: { ...options.mutation, mutationKey } }
+    : { mutation: { mutationKey }, request: undefined };
+
+  const mutationFn: MutationFunction<
+    Awaited<ReturnType<typeof resetPlatformEarnings>>,
+    void
+  > = () => {
+    return resetPlatformEarnings(requestOptions);
+  };
+
+  return { mutationFn, ...mutationOptions };
+};
+
+export type ResetPlatformEarningsMutationResult = NonNullable<
+  Awaited<ReturnType<typeof resetPlatformEarnings>>
+>;
+
+export type ResetPlatformEarningsMutationError = ErrorType<unknown>;
+
+/**
+ * @summary Reset platform earnings counter to zero (main admin only)
+ */
+export const useResetPlatformEarnings = <
+  TError = ErrorType<unknown>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof resetPlatformEarnings>>,
+    TError,
+    void,
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationResult<
+  Awaited<ReturnType<typeof resetPlatformEarnings>>,
+  TError,
+  void,
+  TContext
+> => {
+  return useMutation(getResetPlatformEarningsMutationOptions(options));
+};
+
+/**
  * @summary Reset user balance to zero (main admin only)
  */
 export const getResetUserBalanceUrl = (id: number) => {

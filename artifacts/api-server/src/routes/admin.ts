@@ -1,7 +1,7 @@
 import { Router } from "express";
 import bcrypt from "bcryptjs";
 import { db } from "@workspace/db";
-import { usersTable, cardsTable, transactionsTable, withdrawalRequestsTable, driverPaymentsTable, distributorBalanceRequestsTable } from "@workspace/db";
+import { usersTable, cardsTable, transactionsTable, withdrawalRequestsTable, driverPaymentsTable, distributorBalanceRequestsTable, systemSettingsTable } from "@workspace/db";
 import { eq, and, sql, gte, desc } from "drizzle-orm";
 import { requireAuth, requireRole, AuthRequest } from "../middlewares/auth";
 
@@ -26,12 +26,27 @@ router.get("/stats", async (req: AuthRequest, res) => {
     const today = new Date();
     today.setHours(0, 0, 0, 0);
 
+    // Read platform-earnings reset timestamp (if any); ignore invalid/missing values
+    let earningsResetAt: Date | null = null;
+    try {
+      const [resetSetting] = await db.select().from(systemSettingsTable)
+        .where(eq(systemSettingsTable.key, "platform_earnings_reset_at")).limit(1);
+      if (resetSetting?.value) {
+        const parsed = new Date(resetSetting.value);
+        if (!isNaN(parsed.getTime())) earningsResetAt = parsed;
+      }
+    } catch (e) {
+      req.log.warn({ err: e }, "Could not read platform_earnings_reset_at setting");
+    }
+
     const [totalUsers] = await db.select({ count: sql<number>`count(*)` }).from(usersTable);
     const [totalDrivers] = await db.select({ count: sql<number>`count(*)` }).from(usersTable).where(eq(usersTable.role, "driver"));
     const [totalCustomers] = await db.select({ count: sql<number>`count(*)` }).from(usersTable).where(eq(usersTable.role, "customer"));
     const [totalDistributors] = await db.select({ count: sql<number>`count(*)` }).from(usersTable).where(eq(usersTable.role, "distributor"));
     const [totalTransactions] = await db.select({ count: sql<number>`count(*)` }).from(transactionsTable);
-    const [platformEarnings] = await db.select({ total: sql<number>`coalesce(sum(platform_fee), 0)` }).from(transactionsTable);
+    const [platformEarnings] = earningsResetAt
+      ? await db.select({ total: sql<number>`coalesce(sum(platform_fee), 0)` }).from(transactionsTable).where(gte(transactionsTable.createdAt, earningsResetAt))
+      : await db.select({ total: sql<number>`coalesce(sum(platform_fee), 0)` }).from(transactionsTable);
     const [pendingCards] = await db.select({ count: sql<number>`count(*)` }).from(cardsTable).where(eq(cardsTable.status, "pending"));
     const [pendingWithdrawals] = await db.select({ count: sql<number>`count(*)` }).from(withdrawalRequestsTable).where(eq(withdrawalRequestsTable.status, "pending"));
     const [todayTx] = await db.select({ count: sql<number>`count(*)` }).from(transactionsTable).where(gte(transactionsTable.createdAt, today));
@@ -161,6 +176,25 @@ router.post("/users/:id/reset-password", async (req: AuthRequest, res) => {
     const passwordHash = await bcrypt.hash(newPassword, 10);
     await db.update(usersTable).set({ passwordHash }).where(eq(usersTable.id, Number(req.params.id)));
     res.json({ success: true, message: "Password reset" });
+  } catch (err) {
+    req.log.error(err);
+    res.status(500).json({ error: "Server error" });
+  }
+});
+
+// Reset platform earnings counter to zero — main admin only
+router.post("/reset-platform-earnings", async (req: AuthRequest, res) => {
+  if (!isMainAdmin(req)) {
+    res.status(403).json({ error: "Only main admin can reset platform earnings" });
+    return;
+  }
+  try {
+    const now = new Date().toISOString();
+    await db.insert(systemSettingsTable)
+      .values({ key: "platform_earnings_reset_at", value: now })
+      .onConflictDoUpdate({ target: systemSettingsTable.key, set: { value: now, updatedAt: new Date() } });
+    req.log.info({ adminId: req.userId, resetAt: now }, "Platform earnings counter reset");
+    res.json({ success: true, message: "Platform earnings reset to zero" });
   } catch (err) {
     req.log.error(err);
     res.status(500).json({ error: "Server error" });

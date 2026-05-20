@@ -1,7 +1,7 @@
 import React, { useState } from "react";
 import { View, Text, ScrollView, StyleSheet, TouchableOpacity, Alert, ActivityIndicator } from "react-native";
 import { router } from "expo-router";
-import { useGetAdminStats, useGetAdminDriverEarnings, useGetAdminDistributorBalances } from "@workspace/api-client-react";
+import { useGetAdminStats, useGetAdminDriverEarnings, useGetAdminDistributorBalances, useResetPlatformEarnings } from "@workspace/api-client-react";
 import { useAuth } from "@/context/AuthContext";
 import { useLanguage } from "@/context/LanguageContext";
 import { useTheme } from "@/context/ThemeContext";
@@ -19,9 +19,30 @@ export default function AdminDashboard() {
 
   const [pdfLoading, setPdfLoading] = useState(false);
 
-  const { data: stats, isLoading }        = useGetAdminStats();
+  const { data: stats, isLoading, refetch: refetchStats } = useGetAdminStats();
   const { data: earnings }                = useGetAdminDriverEarnings();
   const { data: distData, isLoading: distLoading } = useGetAdminDistributorBalances();
+  const { mutateAsync: resetPlatformEarnings, isPending: resetEarningsLoading } = useResetPlatformEarnings();
+
+  function handleResetEarnings() {
+    Alert.alert(
+      "⚠️ تصفير أرباح المنصة",
+      `هل أنت متأكد من تصفير عداد أرباح المنصة إلى 0؟\n\nالأرباح الحالية: ${stats?.totalPlatformEarnings?.toFixed(0) ?? 0} دج\n\nسيبدأ العدّ من جديد من هذه اللحظة. سجل المعاملات يبقى محفوظاً.`,
+      [
+        { text: t.common.cancel, style: "cancel" },
+        {
+          text: "تصفير إلى 0", style: "destructive",
+          onPress: async () => {
+            try {
+              await resetPlatformEarnings();
+              Alert.alert("✅", "تم تصفير أرباح المنصة إلى 0");
+              refetchStats();
+            } catch { Alert.alert(t.common.error, "فشل تصفير الأرباح"); }
+          },
+        },
+      ]
+    );
+  }
 
   const tabs = [
     { key: "dashboard",   icon: "📊", label: t.admin.dashboard,   onPress: () => {} },
@@ -130,6 +151,16 @@ export default function AdminDashboard() {
                     <StatCard label={t.admin.todayTransactions}  value={stats.todayTransactions ?? 0}  icon="🔄" />
                     <StatCard label={t.admin.platformEarnings}   value={`${stats.totalPlatformEarnings?.toFixed(0)} ${t.common.dinar}`} icon="💹" color={C.success} />
                   </View>
+                  <TouchableOpacity
+                    style={[s.resetEarningsBtn, resetEarningsLoading && { opacity: 0.6 }]}
+                    onPress={handleResetEarnings}
+                    disabled={resetEarningsLoading}
+                    activeOpacity={0.85}
+                  >
+                    {resetEarningsLoading
+                      ? <ActivityIndicator color="#FFF" size="small" />
+                      : <Text style={s.resetEarningsBtnText}>🔄 تصفير أرباح المنصة إلى 0</Text>}
+                  </TouchableOpacity>
                 </View>
 
                 <View style={s.section}>
@@ -286,5 +317,10 @@ function makeStyles(C: any) {
     headerActions: { flexDirection: "row", gap: 6 },
     actionBtn: { width: 34, height: 34, borderRadius: 17, backgroundColor: "rgba(255,255,255,0.15)", alignItems: "center", justifyContent: "center" },
     actionBtnText: { fontSize: 16, color: "#FFF" },
+    resetEarningsBtn: {
+      marginTop: 10, backgroundColor: C.warning, borderRadius: 12, padding: 14,
+      alignItems: "center", justifyContent: "center",
+    },
+    resetEarningsBtnText: { fontFamily: "Changa_700Bold", fontSize: 14, color: "#FFF" },
   });
 }
