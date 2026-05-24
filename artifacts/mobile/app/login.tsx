@@ -16,7 +16,7 @@ export default function LoginScreen() {
   const [loading, setLoading] = useState(false);
   const [showPass, setShowPass] = useState(false);
 
-  const API_BASE = `https://${process.env.EXPO_PUBLIC_DOMAIN}`;
+  const API_BASE = process.env.EXPO_PUBLIC_API_URL || "https://nqldz.onrender.com";
 
   async function handleLogin() {
     if (!email.trim() || !password.trim()) {

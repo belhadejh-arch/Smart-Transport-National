@@ -7,7 +7,7 @@ import { router, useLocalSearchParams } from "expo-router";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useTheme } from "@/context/ThemeContext";
 
-const API_BASE = `https://${process.env.EXPO_PUBLIC_DOMAIN}`;
+const API_BASE = process.env.EXPO_PUBLIC_API_URL || "https://nqldz.onrender.com";
 
 function getStrength(p: string): { score: number; label: string; color: string } {
   let s = 0;

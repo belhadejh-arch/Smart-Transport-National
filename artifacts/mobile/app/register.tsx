@@ -13,7 +13,7 @@ export default function RegisterScreen() {
   const insets = useSafeAreaInsets();
   const [form, setForm] = useState({ name: "", lastName: "", email: "", phone: "", password: "" });
   const [loading, setLoading] = useState(false);
-  const API_BASE = `https://${process.env.EXPO_PUBLIC_DOMAIN}`;
+  const API_BASE = process.env.EXPO_PUBLIC_API_URL || "https://nqldz.onrender.com";
 
   const update = (key: keyof typeof form) => (val: string) => setForm(f => ({ ...f, [key]: val }));
 

@@ -8,7 +8,7 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useTheme } from "@/context/ThemeContext";
 import { useLanguage } from "@/context/LanguageContext";
 
-const API_BASE = `https://${process.env.EXPO_PUBLIC_DOMAIN}`;
+const API_BASE = process.env.EXPO_PUBLIC_API_URL || "https://nqldz.onrender.com";
 
 export default function ForgotPasswordScreen() {
   const { C } = useTheme();

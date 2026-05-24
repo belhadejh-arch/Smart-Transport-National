@@ -13,7 +13,7 @@ import { Header } from "@/components/Header";
 import { TabBar } from "@/components/TabBar";
 import { LanguageSwitcher } from "@/components/LanguageSwitcher";
 
-const API_BASE = `https://${process.env.EXPO_PUBLIC_DOMAIN}`;
+const API_BASE = process.env.EXPO_PUBLIC_API_URL || "https://nqldz.onrender.com";
 
 export default function AdminProfile() {
   const { t, isRTL } = useLanguage();

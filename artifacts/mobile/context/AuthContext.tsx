@@ -3,7 +3,7 @@ import AsyncStorage from "@react-native-async-storage/async-storage";
 import { setBaseUrl, setAuthTokenGetter } from "@workspace/api-client-react";
 import { router } from "expo-router";
 
-const API_BASE = `https://${process.env.EXPO_PUBLIC_DOMAIN}`;
+const API_BASE = process.env.EXPO_PUBLIC_API_URL || "https://nqldz.onrender.com";
 setBaseUrl(API_BASE);
 
 export interface AuthUser {
