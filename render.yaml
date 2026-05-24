@@ -15,7 +15,7 @@ services:
       cd artifacts/mobile && pnpm exec expo export --platform web
 
     startCommand: |
-      cd artifacts/api-server && WEB_DIST=$RENDER_PROJECT_DIR/artifacts/mobile/dist node --enable-source-maps ./dist/index.mjs
+      cd artifacts/api-server && WEB_DIST=../mobile/dist node --enable-source-maps ./dist/index.mjs
 
     healthCheckPath: /api/healthz
 
