@@ -4,7 +4,6 @@ services:
     runtime: node
     region: frankfurt
     plan: starter
-    nodeVersion: "24"
 
     buildCommand: |
       corepack enable
@@ -21,6 +20,8 @@ services:
     healthCheckPath: /api/healthz
 
     envVars:
+      - key: NODE_VERSION
+        value: "24"
       - key: NODE_ENV
         value: production
       - key: PORT
